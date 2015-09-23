@@ -13,7 +13,12 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception{
 
         URL url = getClass().getResource("main.fxml");
-        Parent root = FXMLLoader.load(url);
+
+        FXMLLoader loader = new FXMLLoader(url);
+        Parent root = loader.load();
+
+        mainController controller = loader.getController();
+        controller.setStage(primaryStage);
 
         Scene scene = new Scene(root, 300, 275);
         primaryStage.setScene(scene);

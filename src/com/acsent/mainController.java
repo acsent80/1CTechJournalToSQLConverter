@@ -8,8 +8,12 @@ import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 
 public class mainController implements Initializable {
+
+    private Stage stage;
 
     @FXML
     javafx.scene.control.Label dirLabel;
@@ -24,15 +28,23 @@ public class mainController implements Initializable {
         dirText.setText("123");
     }
 
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
+
     public void dirButtonOnAction(ActionEvent actionEvent) {
 
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        int result = chooser.showOpenDialog(null);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = chooser.getSelectedFile();
-            dirText.setText(selectedFile.getPath());
+        DirectoryChooser directoryChooser  = new DirectoryChooser();
+
+        File initialDirectory = new File(dirText.getText());
+        if (initialDirectory.exists()) {
+            directoryChooser.setInitialDirectory(initialDirectory);
         }
 
+        File selectedDir = directoryChooser.showDialog(stage);
+
+        if (selectedDir != null) {
+            dirText.setText(selectedDir.getPath());
+        }
     }
 }

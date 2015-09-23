@@ -4,7 +4,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
-import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -15,8 +14,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 public class mainController implements Initializable {
-
-    private Stage stage;
 
     @FXML
     TextField dirText;

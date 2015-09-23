@@ -5,15 +5,20 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import java.net.URL;
 
 public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
 
-        Parent root = FXMLLoader.load(getClass().getResource("main.fxml"));
-        primaryStage.setTitle("Hello World");
-        primaryStage.setScene(new Scene(root, 300, 275));
+        URL url = getClass().getResource("main.fxml");
+        Parent root = FXMLLoader.load(url);
+
+        Scene scene = new Scene(root, 300, 275);
+        primaryStage.setScene(scene);
+
+        primaryStage.setTitle("My first java fx app");
         primaryStage.show();
     }
 

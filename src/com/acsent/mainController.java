@@ -27,10 +27,6 @@ public class mainController implements Initializable {
         dirText.setText("123");
     }
 
-    public void setStage(Stage stage) {
-      /*  this.stage = stage; */
-    }
-
     public void dirButtonOnAction(ActionEvent actionEvent) {
 
         DirectoryChooser directoryChooser  = new DirectoryChooser();

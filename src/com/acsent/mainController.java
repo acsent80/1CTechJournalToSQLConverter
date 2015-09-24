@@ -47,7 +47,7 @@ public class mainController implements Initializable{
 
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
         prefs.put("Directory", dirText.getText());
-}
+    }
 
     public void dirButtonOnAction(ActionEvent actionEvent) {
 

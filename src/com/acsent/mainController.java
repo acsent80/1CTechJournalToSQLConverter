@@ -1,5 +1,8 @@
 package com.acsent;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -9,8 +12,11 @@ import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
 
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -22,26 +28,64 @@ public class mainController implements Initializable{
     TextField dirText;
     @FXML
     GridPane gridPane;
-    @FXML
-    Label testLabel;
 
-    //private Preferences prefs;
+    @FXML
+    TableView<TableRow> filesTableView;
+    @FXML
+    TableColumn<TableRow, String> tableDirName;
+    @FXML
+    TableColumn<TableRow, String> tableFileName;
+
+    @FXML
+    Label messageLabel;
+
     private Stage stage;
 
+    private final ObservableList<TableRow> data = FXCollections.observableArrayList();
+
+    public class TableRow {
+        private final SimpleStringProperty dirName;
+        private final SimpleStringProperty fileName;
+
+        private TableRow(String dirName, String fileName) {
+            this.dirName  = new SimpleStringProperty(dirName);
+            this.fileName = new SimpleStringProperty(fileName);
+        }
+
+        public String getDirName() {
+            return dirName.get();
+        }
+        public void setDirName(String value) {
+            dirName.set(value);
+        }
+        public String getFileName() {
+            return fileName.get();
+        }
+        public void setFileName(String value) {
+            fileName.set(value);
+        }
+
+    }
+
     public void setStage(Stage stage) {
-
         this.stage = stage;
-
         stage.setOnCloseRequest(this::stageOnClose);
-
     }
 
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
+        messageLabel.setText("");
+
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
         dirText.setText(prefs.get("Directory", ""));
 
-     }
+        // Привязка таблицы к данным
+        tableDirName.setCellValueFactory( new PropertyValueFactory<>("dirName"));
+        tableFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
+
+        filesTableView.setItems(data);
+
+    }
 
     public void stageOnClose(WindowEvent windowEvent) {
 
@@ -63,5 +107,32 @@ public class mainController implements Initializable{
         if (selectedDir != null) {
             dirText.setText(selectedDir.getPath());
         }
+    }
+
+    public void processButtonOnAction(ActionEvent actionEvent) {
+
+        messageLabel.setText("");
+        data.clear();
+
+        File rootFolder = new File(dirText.getText());
+        if ( ! rootFolder.exists()) {
+            messageLabel.setText("Каталог не найден!");
+            return;
+        }
+
+        String[] folders = rootFolder.list((folder, name) -> name.startsWith("rphost"));
+
+        for (String folderName : folders) {
+
+            File curFolder = new File(rootFolder + "//" + folderName);
+            String[] filesInFolder = curFolder.list((folder, name) -> name.endsWith(".log"));
+
+            for (String fileName : filesInFolder) {
+                TableRow row = new TableRow(folderName, fileName);
+                data.add(row);
+            }
+
+        }
+
     }
 }

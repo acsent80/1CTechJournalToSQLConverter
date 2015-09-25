@@ -1,6 +1,5 @@
 package com.acsent;
 
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -11,6 +10,9 @@ import javafx.fxml.Initializable;
 
 import java.io.File;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
 
@@ -24,6 +26,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
+@SuppressWarnings({"UnusedParameters", "WeakerAccess"})
 public class mainController implements Initializable{
 
     @FXML
@@ -39,6 +42,9 @@ public class mainController implements Initializable{
     TableColumn<TableRow, String> tableFileName;
     @FXML
     TableColumn<TableRow, Long> tableFileSize;
+
+    @FXML
+    TextField connectionStringText;
 
     @FXML
     Label messageLabel;
@@ -95,6 +101,8 @@ public class mainController implements Initializable{
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
         dirText.setText(prefs.get("Directory", ""));
 
+        connectionStringText.setText("D:\\Temp");
+
         // Привязка таблицы к данным
         tableDirName.setCellValueFactory( new PropertyValueFactory<>("dirName"));
         tableFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
@@ -150,6 +158,18 @@ public class mainController implements Initializable{
                 data.add(row);
             }
 
+        }
+
+    }
+    public void ButtonOnAction(ActionEvent actionEvent) throws ClassNotFoundException {
+
+        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        try {
+            String connectionUrl = "jdbc:sqlserver://localhost:1433;" +
+                    "databaseName=AdventureWorks;user=MyUserName;password=*****;";
+            Connection connection = DriverManager.getConnection(connectionUrl, "", "");
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
     }

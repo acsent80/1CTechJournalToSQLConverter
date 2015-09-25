@@ -8,6 +8,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 
+@SuppressWarnings("ALL")
 public class Main extends Application {
 
     @Override

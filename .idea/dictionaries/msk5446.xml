@@ -2,7 +2,9 @@
   <dictionary name="msk5446">
     <words>
       <w>acsent</w>
+      <w>jdbc</w>
       <w>rphost</w>
+      <w>sqlserver</w>
     </words>
   </dictionary>
 </component>

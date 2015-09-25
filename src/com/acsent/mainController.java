@@ -1,5 +1,7 @@
 package com.acsent;
 
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -35,6 +37,8 @@ public class mainController implements Initializable{
     TableColumn<TableRow, String> tableDirName;
     @FXML
     TableColumn<TableRow, String> tableFileName;
+    @FXML
+    TableColumn<TableRow, Long> tableFileSize;
 
     @FXML
     Label messageLabel;
@@ -46,10 +50,16 @@ public class mainController implements Initializable{
     public class TableRow {
         private final SimpleStringProperty dirName;
         private final SimpleStringProperty fileName;
+        private final SimpleLongProperty fileSize;
 
-        private TableRow(String dirName, String fileName) {
-            this.dirName  = new SimpleStringProperty(dirName);
-            this.fileName = new SimpleStringProperty(fileName);
+        private TableRow(File file) {
+
+            this.dirName  = new SimpleStringProperty(file.getParent());
+            this.fileName = new SimpleStringProperty(file.getName());
+
+            Long size = file.length();
+            size = size / (1024 * 1024);
+            this.fileSize = new SimpleLongProperty(size);
         }
 
         public String getDirName() {
@@ -63,6 +73,12 @@ public class mainController implements Initializable{
         }
         public void setFileName(String value) {
             fileName.set(value);
+        }
+        public Long getFileSize() {
+            return fileSize.get();
+        }
+        public void setFileSize(Long value) {
+            fileSize.set(value);
         }
 
     }
@@ -82,6 +98,7 @@ public class mainController implements Initializable{
         // Привязка таблицы к данным
         tableDirName.setCellValueFactory( new PropertyValueFactory<>("dirName"));
         tableFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
+        tableFileSize.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
 
         filesTableView.setItems(data);
 
@@ -128,7 +145,8 @@ public class mainController implements Initializable{
             String[] filesInFolder = curFolder.list((folder, name) -> name.endsWith(".log"));
 
             for (String fileName : filesInFolder) {
-                TableRow row = new TableRow(folderName, fileName);
+                File tmpFile = new File(curFolder + "//" + fileName);
+                TableRow row = new TableRow(tmpFile);
                 data.add(row);
             }
 

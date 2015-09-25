@@ -21,7 +21,7 @@ public class Main extends Application {
         mainController controller = loader.getController();
         controller.setStage(primaryStage);
 
-        Scene scene = new Scene(root, 300, 275);
+        Scene scene = new Scene(root, 450, 400);
         primaryStage.setScene(scene);
 
         primaryStage.setTitle("My first java fx app");

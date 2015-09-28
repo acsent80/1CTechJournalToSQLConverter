@@ -4,6 +4,7 @@
       <w>acsent</w>
       <w>jdbc</w>
       <w>rphost</w>
+      <w>sqlite</w>
       <w>sqlserver</w>
     </words>
   </dictionary>

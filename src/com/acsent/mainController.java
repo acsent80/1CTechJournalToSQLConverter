@@ -10,8 +10,6 @@ import javafx.fxml.Initializable;
 
 import java.io.File;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
@@ -161,13 +159,15 @@ public class mainController implements Initializable{
         }
 
     }
-    public void ButtonOnAction(ActionEvent actionEvent) throws ClassNotFoundException {
+    public void ButtonOnAction(ActionEvent actionEvent) throws Exception {
 
-        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         try {
-            String connectionUrl = "jdbc:sqlserver://localhost:1433;" +
-                    "databaseName=AdventureWorks;user=MyUserName;password=*****;";
-            Connection connection = DriverManager.getConnection(connectionUrl, "", "");
+
+            DBTools.connect("TEST1");
+            DBTools.execute("CREATE TABLE if not exists 'users' ('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'name' text, 'phone' INT);");
+            DBTools.execute("CREATE TABLE if not exists 'users' ('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'name' text, 'phone' INT);");
+            DBTools.close();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }

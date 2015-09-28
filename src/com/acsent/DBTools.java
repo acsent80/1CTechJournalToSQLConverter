@@ -1,9 +1,11 @@
 package com.acsent;
 
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Scanner;
 
 public class DBTools {
 
@@ -29,5 +31,15 @@ public class DBTools {
 
     public static void close() throws SQLException {
         connection.close();
+    }
+
+    public static void execSQLfromResource(String resourceName) throws SQLException {
+
+        InputStream inputStream = Main.class.getResourceAsStream(resourceName);
+
+        if (inputStream != null) {
+            String sqlText = new Scanner(inputStream, "UTF-8").useDelimiter("\\A").next();
+            execute(sqlText);
+        }
     }
 }

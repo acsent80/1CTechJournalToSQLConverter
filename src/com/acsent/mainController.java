@@ -9,9 +9,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.ResourceBundle;
+import java.util.Scanner;
 import java.util.prefs.Preferences;
 
 import javafx.scene.control.TableColumn;
@@ -23,6 +25,9 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import sun.misc.IOUtils;
+
+import javax.annotation.Resources;
 
 @SuppressWarnings({"UnusedParameters", "WeakerAccess"})
 public class mainController implements Initializable{
@@ -164,13 +169,12 @@ public class mainController implements Initializable{
         try {
 
             DBTools.connect("TEST1");
-            DBTools.execute("CREATE TABLE if not exists 'users' ('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'name' text, 'phone' INT);");
-            DBTools.execute("CREATE TABLE if not exists 'users' ('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'name' text, 'phone' INT);");
+            DBTools.execSQLfromResource("/create.sql");
             DBTools.close();
 
         } catch (SQLException e) {
+            System.out.println(e.toString());
             e.printStackTrace();
         }
-
     }
 }

@@ -186,7 +186,7 @@ public class mainController implements Initializable {
         /*
         try {
 
-            DB db = new DB();
+            DBTools db = new DBTools();
             db.connect("TEST1");
             db.execSQLfromResource("/create.sql");
             db.close();

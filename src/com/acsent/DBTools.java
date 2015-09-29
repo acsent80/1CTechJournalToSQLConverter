@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
 
-class DB {
+class DBTools {
 
     private Connection connection;
     private Statement statement;

@@ -83,6 +83,7 @@ public class Parser {
 
         if (fieldNumber == 1) {
 
+            //06:36.085000-156969
             String value = sb.toString();
             int index = value.indexOf('-');
             String timeValue     = value.substring(0, index);

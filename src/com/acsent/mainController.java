@@ -167,15 +167,8 @@ public class mainController implements Initializable {
 
     public void ButtonOnAction(ActionEvent actionEvent) throws Exception {
 
-        //Charset UTF = Charset.forName("UTF-8");
         String pathToFile = "D:\\Logs\\15091516.log1";
-/*
-        InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(pathToFile), "UTF-8");
-        BufferedReader br = new BufferedReader(inputStreamReader);
-        String line = br.readLine();
-*/
-        HashMap<String, String> tokens;// = new HashMap<>();
-
+        HashMap<String, String> tokens;
 
         int counter = 0;
         Parser parser = new Parser();

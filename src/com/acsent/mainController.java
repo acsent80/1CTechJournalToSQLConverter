@@ -12,6 +12,8 @@ import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.ResourceBundle;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.prefs.Preferences;
 
 import javafx.scene.control.TableColumn;
@@ -167,7 +169,12 @@ public class mainController implements Initializable {
 
     public void ButtonOnAction(ActionEvent actionEvent) throws Exception {
 
-        String pathToFile = "D:\\Logs\\pom.log";
+
+        BlockingQueue<HashMap<String, String>> queue = new ArrayBlockingQueue<HashMap<String, String>>(128, true);
+        (new Thread(new Producer(queue))).start();
+        (new Thread(new Consumer(queue))).start();
+
+        /*        String pathToFile = "D:\\tmp\\15091415.log";
         HashMap<String, String> tokens;
 
         int counter = 0;
@@ -199,3 +206,85 @@ public class mainController implements Initializable {
     }
 
 }
+
+class Producer implements Runnable {
+
+    private BlockingQueue<HashMap<String, String>> queue;
+
+    public Producer(BlockingQueue<HashMap<String, String>> queue) {
+        this.queue = queue;
+    }
+
+    @Override
+    public void run() {
+
+        String pathToFile = "D:\\tmp\\15091415.log";
+        HashMap<String, String> tokens;
+
+        Parser parser = new Parser();
+        try {
+            parser.openFile(pathToFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        int counter = 0;
+
+        try {
+            while ((tokens = parser.parseNext()) != null) {
+
+                queue.put(tokens);
+                counter++;
+                if (counter == 3) break;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+
+            HashMap<String, String> endOfQueue = new HashMap<>();
+            endOfQueue.put("DONE", "DONE");
+            queue.put(endOfQueue);
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            parser.closeFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+ class Consumer implements Runnable {
+
+     private BlockingQueue<HashMap<String, String>> queue;
+
+     public Consumer(BlockingQueue<HashMap<String, String>> queue) {
+         this.queue = queue;
+     }
+
+     @Override
+     public void run() {
+
+         try {
+             HashMap<String, String> tokens;
+             while (true) {
+                 tokens = queue.take();
+                 if (tokens.get("DONE") != "DONE") {
+                     System.out.println(tokens);
+                 } else {
+                     break;
+                 }
+             }
+         } catch (InterruptedException intEx) {
+             System.out.println("Interrupted! " +
+                     "Last one out, turn out the lights!");
+         }
+
+     }
+ }

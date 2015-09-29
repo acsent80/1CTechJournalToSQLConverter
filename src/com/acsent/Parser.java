@@ -119,14 +119,12 @@ public class Parser {
 
         HashMap<String, String> tokens = new HashMap<>();
 
-        String line = bufferedReader.readLine();
-        while (line != null) {
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
 
             boolean isEndOfLine = parseLine(line, tokens);
             if (isEndOfLine) {
                 return tokens;
-            } else {
-                line = bufferedReader.readLine();
             }
         }
 

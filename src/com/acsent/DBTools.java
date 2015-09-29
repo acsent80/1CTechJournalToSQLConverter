@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 
 class DBTools {
@@ -27,6 +29,14 @@ class DBTools {
 
         System.out.println(statement);
         statement.execute(sqlText);
+    }
+
+    public void insertValues(String tableName, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {
+
+        String sqlText = "INSERT INTO " + tableName + "(";
+
+        statement.execute(sqlText);
+
     }
 
     public void close() throws SQLException {

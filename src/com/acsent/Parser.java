@@ -46,10 +46,6 @@ public class Parser {
                     inQuotes = true;
                 } else if (c == openQuoteChar) {
                     inQuotes = !inQuotes;
-                    if (i == nextLineLength-1) {
-                        //tokens.put(fieldName, sb.toString());
-                        addField(tokens, sb);
-                    }
                 } else {
                     sb.append(c);
                 }
@@ -97,7 +93,7 @@ public class Parser {
             tokens.put("name", sb.toString());
 
         } else if (fieldNumber == 3) {
-            tokens.put("xxx", sb.toString());
+            tokens.put("field3", sb.toString());
 
         } else {
             tokens.put(fieldName, sb.toString());

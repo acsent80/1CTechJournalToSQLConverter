@@ -167,7 +167,7 @@ public class mainController implements Initializable {
 
     public void ButtonOnAction(ActionEvent actionEvent) throws Exception {
 
-        String pathToFile = "D:\\Logs\\15091516.log1";
+        String pathToFile = "D:\\Logs\\pom.log";
         HashMap<String, String> tokens;
 
         int counter = 0;

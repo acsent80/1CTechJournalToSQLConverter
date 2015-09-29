@@ -8,12 +8,10 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
-import java.io.File;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
-import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.ResourceBundle;
-import java.util.Scanner;
 import java.util.prefs.Preferences;
 
 import javafx.scene.control.TableColumn;
@@ -25,12 +23,9 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-import sun.misc.IOUtils;
-
-import javax.annotation.Resources;
 
 @SuppressWarnings({"UnusedParameters", "WeakerAccess"})
-public class mainController implements Initializable{
+public class mainController implements Initializable {
 
     @FXML
     TextField dirText;
@@ -63,7 +58,7 @@ public class mainController implements Initializable{
 
         private TableRow(File file) {
 
-            this.dirName  = new SimpleStringProperty(file.getParent());
+            this.dirName = new SimpleStringProperty(file.getParent());
             this.fileName = new SimpleStringProperty(file.getName());
 
             Long size = file.length();
@@ -74,18 +69,23 @@ public class mainController implements Initializable{
         public String getDirName() {
             return dirName.get();
         }
+
         public void setDirName(String value) {
             dirName.set(value);
         }
+
         public String getFileName() {
             return fileName.get();
         }
+
         public void setFileName(String value) {
             fileName.set(value);
         }
+
         public Long getFileSize() {
             return fileSize.get();
         }
+
         public void setFileSize(Long value) {
             fileSize.set(value);
         }
@@ -107,7 +107,7 @@ public class mainController implements Initializable{
         connectionStringText.setText("D:\\Temp");
 
         // Привязка таблицы к данным
-        tableDirName.setCellValueFactory( new PropertyValueFactory<>("dirName"));
+        tableDirName.setCellValueFactory(new PropertyValueFactory<>("dirName"));
         tableFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
         tableFileSize.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
 
@@ -143,7 +143,7 @@ public class mainController implements Initializable{
         data.clear();
 
         File rootFolder = new File(dirText.getText());
-        if ( ! rootFolder.exists()) {
+        if (!rootFolder.exists()) {
             messageLabel.setText("Каталог не найден!");
             return;
         }
@@ -164,17 +164,45 @@ public class mainController implements Initializable{
         }
 
     }
+
     public void ButtonOnAction(ActionEvent actionEvent) throws Exception {
 
+        //Charset UTF = Charset.forName("UTF-8");
+        String pathToFile = "D:\\Logs\\15091516.log1";
+/*
+        InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(pathToFile), "UTF-8");
+        BufferedReader br = new BufferedReader(inputStreamReader);
+        String line = br.readLine();
+*/
+        HashMap<String, String> tokens;// = new HashMap<>();
+
+
+        int counter = 0;
+        Parser parser = new Parser();
+        parser.openFile(pathToFile);
+        tokens = parser.parseNext();
+        while (tokens != null) {
+            System.out.println("-----------------");
+            System.out.println(tokens.toString());
+            counter++;
+            if (counter == 15) break;
+            tokens = parser.parseNext();
+        }
+
+        parser.closeFile();
+        /*
         try {
 
-            DBTools.connect("TEST1");
-            DBTools.execSQLfromResource("/create.sql");
-            DBTools.close();
+            DB db = new DB();
+            db.connect("TEST1");
+            db.execSQLfromResource("/create.sql");
+            db.close();
 
         } catch (SQLException e) {
             System.out.println(e.toString());
             e.printStackTrace();
         }
+        */
     }
+
 }

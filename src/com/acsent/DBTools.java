@@ -1,10 +1,7 @@
 package com.acsent;
 
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -27,16 +24,34 @@ class DBTools {
 
     public void execute(String sqlText) throws SQLException {
 
-        System.out.println(statement);
         statement.execute(sqlText);
+    }
+
+    public ResultSet executeQuery(String sqlText) throws SQLException {
+
+       return statement.executeQuery(sqlText);
     }
 
     public void insertValues(String tableName, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {
 
+        System.out.println(values);
         String sqlText = "INSERT INTO " + tableName + "(";
 
-        statement.execute(sqlText);
+        //statement.execute(sqlText);
 
+    }
+
+    public ArrayList<String> getTableColumns(String tableName) throws SQLException  {
+
+        ArrayList<String> arrayList = new ArrayList<>();
+
+        ResultSet resultSet = executeQuery("PRAGMA table_info('" + tableName + "')");
+        while (resultSet.next()) {
+            arrayList.add(resultSet.getString("name"));
+        }
+
+        resultSet.close();
+        return arrayList;
     }
 
     public void close() throws SQLException {

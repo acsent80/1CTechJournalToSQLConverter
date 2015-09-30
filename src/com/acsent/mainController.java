@@ -10,6 +10,8 @@ import javafx.fxml.Initializable;
 
 import java.io.*;
 import java.net.URL;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -139,7 +141,7 @@ public class mainController implements Initializable {
         }
     }
 
-    public void processButtonOnAction(ActionEvent actionEvent) {
+    public void findFilesButtonOnAction(ActionEvent actionEvent) {
 
         messageLabel.setText("");
         data.clear();
@@ -167,30 +169,8 @@ public class mainController implements Initializable {
 
     }
 
-    public void ButtonOnAction(ActionEvent actionEvent) throws Exception {
+    public void processButtonOnAction(ActionEvent actionEvent) throws Exception {
 
-
-        BlockingQueue<HashMap<String, String>> queue = new ArrayBlockingQueue<HashMap<String, String>>(128, true);
-        (new Thread(new Producer(queue))).start();
-        (new Thread(new Consumer(queue))).start();
-
-        /*        String pathToFile = "D:\\tmp\\15091415.log";
-        HashMap<String, String> tokens;
-
-        int counter = 0;
-        Parser parser = new Parser();
-        parser.openFile(pathToFile);
-        tokens = parser.parseNext();
-        while (tokens != null) {
-            System.out.println("-----------------");
-            System.out.println(tokens.toString());
-            counter++;
-            if (counter == 15) break;
-            tokens = parser.parseNext();
-        }
-
-        parser.closeFile();
-        /*
         try {
 
             DBTools db = new DBTools();
@@ -199,86 +179,138 @@ public class mainController implements Initializable {
             db.close();
 
         } catch (SQLException e) {
-            System.out.println(e.toString());
             e.printStackTrace();
+            return;
         }
-        */
+
+        BlockingQueue<String> filesQueue          = new ArrayBlockingQueue<>(data.size() + 1, true);
+        BlockingQueue<String> processedFilesQueue = new ArrayBlockingQueue<>(data.size() + 1, true);
+
+        for (TableRow tableRow: data) {
+
+            String dirName  = tableRow.getDirName();
+            String fileName = tableRow.getFileName();
+
+            filesQueue.add(dirName + "\\" + fileName);
+        }
+        filesQueue.add("DONE");
+
+        (new Thread(new ReadFromTJThread(filesQueue, processedFilesQueue))).start();
+
     }
 
 }
 
-class Producer implements Runnable {
+class ReadFromTJThread implements Runnable {
 
-    private BlockingQueue<HashMap<String, String>> queue;
+    private BlockingQueue<HashMap<String, String>> tokensQueue;
+    private BlockingQueue<String> filesQueue;
+    private BlockingQueue<String> processedFilesQueue;
 
-    public Producer(BlockingQueue<HashMap<String, String>> queue) {
-        this.queue = queue;
+    public ReadFromTJThread(BlockingQueue<String> filesQueue, BlockingQueue<String> processedFilesQueue) {
+        this.filesQueue          = filesQueue;
+        this.processedFilesQueue = processedFilesQueue;
     }
 
     @Override
     public void run() {
 
-        String pathToFile = "D:\\tmp\\15091415.log";
-        HashMap<String, String> tokens;
+        while (true) {
 
-        Parser parser = new Parser();
-        try {
-            parser.openFile(pathToFile);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
+            try {
 
-        int counter = 0;
+                String fileName = filesQueue.take();
+                if (fileName.equals("DONE")) {
+                    break;
+                }
 
-        try {
-            while ((tokens = parser.parseNext()) != null) {
+                // auto start queue reader
+                if (tokensQueue == null) {
+                    tokensQueue = new ArrayBlockingQueue<>(128, true);
+                    (new Thread(new WriteToSQLThread(tokensQueue))).start();
+                }
 
-                queue.put(tokens);
-                counter++;
-                if (counter == 3) break;
+                HashMap<String, String> tokens;
+
+                Parser parser = new Parser();
+                try {
+                    parser.openFile(fileName);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
+
+                int counter = 0;
+
+                while ((tokens = parser.parseNext()) != null) {
+
+                    tokensQueue.put(tokens);
+                    counter++;
+                    if (counter == 3) break;
+                }
+
+                HashMap<String, String> endOfQueue = new HashMap<>();
+                endOfQueue.put("DONE", "DONE");
+                tokensQueue.put(endOfQueue);
+
+                parser.closeFile();
+
+                processedFilesQueue.add(fileName);
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+
         }
 
-        try {
-
-            HashMap<String, String> endOfQueue = new HashMap<>();
-            endOfQueue.put("DONE", "DONE");
-            queue.put(endOfQueue);
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            parser.closeFile();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }
 
- class Consumer implements Runnable {
+class WriteToSQLThread implements Runnable {
 
      private BlockingQueue<HashMap<String, String>> queue;
 
-     public Consumer(BlockingQueue<HashMap<String, String>> queue) {
+     public WriteToSQLThread(BlockingQueue<HashMap<String, String>> queue) {
          this.queue = queue;
      }
 
      @Override
      public void run() {
 
+         DBTools db = new DBTools();
+
+         try {
+            db.connect("TEST1");
+         } catch (Exception e) {
+             e.printStackTrace();
+             return;
+         }
+
+         ArrayList<String> fields;
+         try {
+            fields = db.getTableColumns("logs");
+         } catch (Exception e) {
+             e.printStackTrace();
+             return;
+         }
+
          try {
              HashMap<String, String> tokens;
              while (true) {
+
                  tokens = queue.take();
-                 if (tokens.get("DONE") != "DONE") {
-                     System.out.println(tokens);
-                 } else {
+                 if (tokens.get("DONE").equals("DONE")) {
                      break;
+                 }
+
+                 try {
+
+                     db.insertValues("logs", fields, tokens);
+                     db.close();
+
+                 } catch (SQLException e) {
+                     System.out.println(e.toString());
+                     e.printStackTrace();
                  }
              }
          } catch (InterruptedException intEx) {
@@ -288,3 +320,4 @@ class Producer implements Runnable {
 
      }
  }
+

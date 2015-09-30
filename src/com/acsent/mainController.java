@@ -169,12 +169,30 @@ public class mainController implements Initializable {
 
     }
 
+    public void clearTableButtonOnAction(ActionEvent actionEvent) {
+
+        DBTools db = new DBTools("sqlite");
+        try {
+
+            db.connect("", "TEST1", "", "", true);
+            db.execSQLfromResource("/create.sql");
+            db.execute("DELETE FROM [logs]");
+            db.close();
+
+            messageLabel.setText("Таблица очищена");
+
+        } catch (Exception e) {
+            messageLabel.setText(e.toString());
+            e.printStackTrace();
+        }
+    }
+
     public void processButtonOnAction(ActionEvent actionEvent) throws Exception {
 
         try {
 
-            DBTools db = new DBTools();
-            db.connect("TEST1");
+            DBTools db = new DBTools("sqlite");
+            db.connect("", "TEST1", "", "", true);
             db.execSQLfromResource("/create.sql");
             db.close();
 
@@ -195,7 +213,8 @@ public class mainController implements Initializable {
         }
         filesQueue.add("DONE");
 
-        (new Thread(new ReadFromTJThread(filesQueue, processedFilesQueue))).start();
+        Thread thread = new Thread(new ReadFromTJThread(filesQueue, processedFilesQueue, 1));
+        thread.start();
 
     }
 
@@ -206,10 +225,12 @@ class ReadFromTJThread implements Runnable {
     private BlockingQueue<HashMap<String, String>> tokensQueue;
     private BlockingQueue<String> filesQueue;
     private BlockingQueue<String> processedFilesQueue;
+    private int writersCount;
 
-    public ReadFromTJThread(BlockingQueue<String> filesQueue, BlockingQueue<String> processedFilesQueue) {
+    public ReadFromTJThread(BlockingQueue<String> filesQueue, BlockingQueue<String> processedFilesQueue, int writersCount) {
         this.filesQueue          = filesQueue;
         this.processedFilesQueue = processedFilesQueue;
+        this.writersCount        = writersCount;
     }
 
     @Override
@@ -227,7 +248,10 @@ class ReadFromTJThread implements Runnable {
                 // auto start queue reader
                 if (tokensQueue == null) {
                     tokensQueue = new ArrayBlockingQueue<>(128, true);
-                    (new Thread(new WriteToSQLThread(tokensQueue))).start();
+
+                    for (int i = 1; i <= writersCount; i++){
+                        (new Thread(new WriteToSQLThread(tokensQueue))).start();
+                    }
                 }
 
                 HashMap<String, String> tokens;
@@ -246,7 +270,7 @@ class ReadFromTJThread implements Runnable {
 
                     tokensQueue.put(tokens);
                     counter++;
-                    if (counter == 3) break;
+                    if (counter == 300) break;
                 }
 
                 HashMap<String, String> endOfQueue = new HashMap<>();
@@ -277,10 +301,10 @@ class WriteToSQLThread implements Runnable {
      @Override
      public void run() {
 
-         DBTools db = new DBTools();
+         DBTools db = new DBTools("sqlite");
 
          try {
-            db.connect("TEST1");
+             db.connect("", "TEST1", "", "", true);
          } catch (Exception e) {
              e.printStackTrace();
              return;
@@ -295,24 +319,43 @@ class WriteToSQLThread implements Runnable {
          }
 
          try {
+             db.execute("PRAGMA journal_mode = MEMORY");
+             db.execute("BEGIN TRANSACTION");
+         } catch (SQLException e) {
+             e.printStackTrace();
+         }
+
+         int counter = 0;
+         try {
              HashMap<String, String> tokens;
              while (true) {
 
                  tokens = queue.take();
-                 if (tokens.get("DONE").equals("DONE")) {
+                 counter++;
+
+                 if (tokens.get("DONE") != null) {
                      break;
                  }
 
                  try {
-
                      db.insertValues("logs", fields, tokens);
-                     db.close();
+                     if (counter % 100 == 0) {
+                         db.execute("COMMIT");
+                         db.execute("BEGIN TRANSACTION");
+                     }
 
                  } catch (SQLException e) {
-                     System.out.println(e.toString());
                      e.printStackTrace();
                  }
              }
+
+             try {
+                 db.execute("COMMIT");
+                 db.close();
+             } catch (SQLException e) {
+                  e.printStackTrace();
+             }
+
          } catch (InterruptedException intEx) {
              System.out.println("Interrupted! " +
                      "Last one out, turn out the lights!");

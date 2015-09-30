@@ -85,17 +85,19 @@ public class Parser {
             String timeValue     = value.substring(0, index);
             String durationValue = value.substring(index + 1);
 
-            tokens.put("time",     timeValue);
-            tokens.put("duration", durationValue);
+            tokens.put("Time",     timeValue);
+            tokens.put("Duration", durationValue);
+            tokens.put("DateTime", timeValue);
 
         } else if (fieldNumber == 2) {
 
-            tokens.put("name", sb.toString());
+            tokens.put("Name", sb.toString());
 
         } else if (fieldNumber == 3) {
-            tokens.put("field3", sb.toString());
+            tokens.put("Level", sb.toString());
 
         } else {
+            fieldName = fieldName.replace(":", "_");
             tokens.put(fieldName, sb.toString());
         }
 

@@ -3,7 +3,7 @@ CREATE TABLE if not exists [logs](
     [FileName] [char](200) NULL,
     [Moment] [char](12) NULL,
     [Duration] [numeric](18, 5) NULL,
-    [EventName] [char](15) NULL,
+    [Name] [char](15) NULL,
     [Process] [char](50) NULL,
     [Level] [char](3) NULL,
     [ProcessName] [char](50) NULL,

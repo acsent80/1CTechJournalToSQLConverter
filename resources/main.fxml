@@ -76,5 +76,10 @@
             <Insets right="100.0" />
          </GridPane.margin>
       </Button>
+      <Button mnemonicParsing="false" onAction="#clearTableButtonOnAction" text="Очистить таблицу" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
+         <GridPane.margin>
+            <Insets right="195.0" />
+         </GridPane.margin>
+      </Button>
      </children>
   </GridPane>

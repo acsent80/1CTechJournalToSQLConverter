@@ -2,9 +2,10 @@ package com.acsent;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.Iterator;
 
 @SuppressWarnings("WeakerAccess")
-public class Parser {
+public class Parser implements Iterator<HashMap<String, String>> {
 
     public char separator = ',';
     public char quoteChar1 = '\'';
@@ -117,19 +118,39 @@ public class Parser {
 
     }
 
-    public HashMap<String, String> parseNext() throws IOException {
+    public HashMap<String, String> next() {
 
         HashMap<String, String> tokens = new HashMap<>();
 
         String line;
-        while ((line = bufferedReader.readLine()) != null) {
 
-            boolean isEndOfLine = parseLine(line, tokens);
-            if (isEndOfLine) {
-                return tokens;
+        try {
+            while ((line = bufferedReader.readLine()) != null) {
+
+                boolean isEndOfLine = parseLine(line, tokens);
+                if (isEndOfLine) {
+                    return tokens;
+                }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         return null;
     }
+
+    public boolean hasNext() {
+
+        try {
+            return bufferedReader.ready();
+        } catch (IOException e) {
+            return false;
+        }
+
+    }
+
+    public void remove(){
+
+    }
+
 }

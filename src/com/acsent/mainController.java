@@ -12,19 +12,16 @@ import javafx.fxml.Initializable;
 import java.io.*;
 import java.net.URL;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.prefs.Preferences;
-import java.util.stream.Collectors;
 
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 
 @SuppressWarnings({"UnusedParameters", "WeakerAccess"})
@@ -79,14 +76,13 @@ public class mainController implements Initializable {
             this.qty      = new SimpleIntegerProperty(0);
         }
 
-        private TableRow(File file) {
+        private TableRow(File file, Long fileSize) {
 
             this.dirName = new SimpleStringProperty(file.getParent());
             this.fileName = new SimpleStringProperty(file.getName());
 
-            Long size = file.length();
-            size = size / (1024 * 1024);
-            this.fileSize = new SimpleLongProperty(size);
+            fileSize = fileSize / (1024 * 1024);
+            this.fileSize = new SimpleLongProperty(fileSize);
             this.status   = new SimpleStringProperty("");
             this.qty      = new SimpleIntegerProperty(0);
         }
@@ -198,9 +194,14 @@ public class mainController implements Initializable {
             String[] filesInFolder = curFolder.list((folder, name) -> name.endsWith(".log"));
 
             for (String fileName : filesInFolder) {
+
                 File tmpFile = new File(curFolder + "//" + fileName);
-                TableRow row = new TableRow(tmpFile);
-                data.add(row);
+                Long size = tmpFile.length();
+
+                if (size > 0) {
+                    TableRow row = new TableRow(tmpFile, size);
+                    data.add(row);
+                }
             }
 
         }
@@ -208,6 +209,17 @@ public class mainController implements Initializable {
     }
 
     public void clearTableButtonOnAction(ActionEvent actionEvent) {
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initStyle(StageStyle.UTILITY);
+        alert.setTitle("Confirmation Dialog");
+        alert.setHeaderText("Clear table 'logs'?");
+        //alert.setContentText("Clear table 'logs'?");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.get() != ButtonType.OK){
+            return;
+        }
 
         DBTools db = new DBTools("sqlite");
         try {
@@ -240,155 +252,14 @@ public class mainController implements Initializable {
             return;
         }
 
-//        processButton.setDisable(true);
-
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
-        data.forEach(tableRow ->
-                executorService.submit(
-                        () -> processLogFile(tableRow)));
-
-        executorService.shutdown();
-//        final boolean done = executorService.awaitTermination(100, TimeUnit.MINUTES);
-//        processButton.setDisable(false);
+        TJLoader tjLoader = new TJLoader();
+        tjLoader.readersCount = 1;
+        tjLoader.writersCount = 1;
+        tjLoader.filesTableView = filesTableView;
+        tjLoader.processAllFiles(data);
 
     }
 
-    private void processLogFile(TableRow tableRow) {
-
-        String fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
-        int writersCount = 1;
-
-        try {
-
-            BlockingQueue<HashMap<String, String>> tokensQueue = new ArrayBlockingQueue<>(128 * writersCount, true);
-
-            ExecutorService executorService = Executors.newFixedThreadPool(writersCount);
-
-            for (int i = 0; i < writersCount; i++) {
-                executorService.submit(new WriteToSQLThread(tokensQueue, filesTableView, tableRow));
-            }
-
-            HashMap<String, String> tokens;
-
-            Parser parser = new Parser();
-            try {
-                parser.openFile(fileName);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-
-            int counter = 0;
-
-            while ((tokens = parser.parseNext()) != null) {
-
-                tokensQueue.put(tokens);
-                counter++;
-                if (counter == 300) break;
-            }
-
-            HashMap<String, String> endOfQueue = new HashMap<>();
-            endOfQueue.put("DONE", "DONE");
-            tokensQueue.put(endOfQueue);
-
-            executorService.shutdown();
-            parser.closeFile();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void insertIntoDB(HashMap<String, String> tokens) {
-
-    }
 }
 
-class WriteToSQLThread implements Runnable {
-
-    private BlockingQueue<HashMap<String, String>> queue;
-    private TableView<mainController.TableRow> filesTableView;
-    private mainController.TableRow tableRow;
-
-    public WriteToSQLThread(BlockingQueue<HashMap<String, String>> queue, TableView<mainController.TableRow> filesTableView, mainController.TableRow tableRow) {
-        this.queue          = queue;
-        this.filesTableView = filesTableView;
-        this.tableRow       = tableRow;
-    }
-
-    @Override
-    public void run() {
-
-        DBTools db = new DBTools("sqlite");
-
-        try {
-            db.connect("", "TEST1", "", "", true);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-
-        ArrayList<String> fields;
-        try {
-            fields = db.getTableColumns("logs");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-
-        try {
-            db.execute("PRAGMA journal_mode = MEMORY");
-            db.execute("BEGIN TRANSACTION");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        int counter = 0;
-        try {
-            HashMap<String, String> tokens;
-            while (true) {
-
-                tokens = queue.take();
-
-                if (tokens.get("DONE") != null) {
-                    break;
-                }
-
-                counter++;
-                System.out.println(counter);
-
-                try {
-                    db.insertValues("logs", fields, tokens);
-                    if (counter % 100 == 0) {
-                        db.execute("COMMIT");
-
-                        tableRow.setQty(counter);
-                        filesTableView.refresh();
-
-                        db.execute("BEGIN TRANSACTION");
-                    }
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            tableRow.setStatus("V");
-            tableRow.setQty(counter);
-            filesTableView.refresh();
-
-            try {
-                db.execute("COMMIT");
-                db.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-        } catch (InterruptedException intEx) {
-            System.out.println("Interrupted! " +
-                    "Last one out, turn out the lights!");
-        }
-
-    }
- }
 

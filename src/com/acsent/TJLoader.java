@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TJLoader {
 
@@ -15,6 +16,10 @@ public class TJLoader {
     public int writersCount;
     public boolean oneReaderPerFile = false;
     public TableView<mainController.TableRow> filesTableView;
+
+    private ThreadListener threadListener;
+
+    public enum Status {BEGIN, DONE}
 
     public TJLoader() {
     }
@@ -33,22 +38,35 @@ public class TJLoader {
 
     }
 
-    class ParserTask implements Runnable {
+    public interface ThreadListener {
+        void onProgress(String fileName, Status status, int counter);
+    }
+
+    public void addListener(ThreadListener threadListener) {
+        this.threadListener = threadListener;
+    }
+
+    //   class ParserTask implements Runnable {
+    class ParserTask extends Thread {
 
         private mainController.TableRow tableRow;
-        private volatile int processedTokensCount = 0;
+        private AtomicInteger processedTokensCount;
+        private String fileName;
 
         public ParserTask(mainController.TableRow tableRow) {
             this.tableRow = tableRow;
+            this.fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
         }
 
         @Override
         public void run() {
 
-            tableRow.setStatus("+");
-            filesTableView.refresh();
+            super.run();
+            if (threadListener != null) {
+                threadListener.onProgress(fileName, Status.BEGIN, 0);
+            }
 
-            String fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
+            processedTokensCount = new AtomicInteger(0);
 
             try {
 
@@ -78,7 +96,7 @@ public class TJLoader {
                     tokensQueue.put(tokens);
 
                     counter++;
-                    if (counter == 300) break;
+                    if (counter == 1000) break;
                 }
 
                 HashMap<String, String> endOfQueue = new HashMap<>();
@@ -132,6 +150,8 @@ public class TJLoader {
                 }
 
                 int counter = 0;
+                int portionSize = 50;
+
                 try {
                     HashMap<String, String> tokens;
                     while (true) {
@@ -147,10 +167,13 @@ public class TJLoader {
                         try {
                             db.insertValues("logs", fields, tokens);
 
-                            if (counter % 10 == 0) {
-                                processedTokensCount += 10;
-                                tableRow.setQty(processedTokensCount);
-                                filesTableView.refresh();
+                            if (counter % portionSize == 0) {
+
+                                if (threadListener != null) {
+                                    int value = processedTokensCount.addAndGet(portionSize);
+                                    threadListener.onProgress(fileName, null, value);
+                                }
+
                             }
 
                             if (counter % 100 == 0) {
@@ -164,9 +187,11 @@ public class TJLoader {
                         }
                     }
 
-                    tableRow.setStatus("V");
-                    tableRow.setQty(counter);
-                    filesTableView.refresh();
+                    if (threadListener != null) {
+
+                        int value = processedTokensCount.addAndGet(portionSize);
+                        threadListener.onProgress(fileName, Status.DONE, value);
+                    }
 
                     try {
                         db.execute("COMMIT");
@@ -184,6 +209,5 @@ public class TJLoader {
         }
 
     }
-
 
 }

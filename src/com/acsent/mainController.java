@@ -1,5 +1,6 @@
 package com.acsent;
 
+import com.sun.javafx.scene.control.skin.TableViewSkinBase;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -12,6 +13,7 @@ import javafx.fxml.Initializable;
 import java.io.*;
 import java.net.URL;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
@@ -60,6 +62,7 @@ public class mainController implements Initializable {
     private Stage stage;
 
     private final ObservableList<TableRow> data = FXCollections.observableArrayList();
+    private HashMap<String, TableRow> rowsByFile;
 
     public class TableRow {
         private final SimpleStringProperty dirName;
@@ -238,6 +241,34 @@ public class mainController implements Initializable {
 
     }
 
+    class UpdateTableThreadListener implements TJLoader.ThreadListener {
+
+        public void onProgress(String fileName, TJLoader.Status status, int counter) {
+
+            TableRow tableRow = rowsByFile.get(fileName);
+
+            if (tableRow != null) {
+
+                if (counter != 0) {
+                    tableRow.setQty(counter);
+                }
+
+                if (status == TJLoader.Status.BEGIN) {
+                    tableRow.setStatus("+");
+                } else if (status == TJLoader.Status.DONE) {
+                    tableRow.setStatus("V");
+                    System.out.println("end");
+                }
+
+                System.out.println(counter);
+
+                filesTableView.refresh();
+                //filesTableView.getProperties().put(TableViewSkinBase.REFRESH, Boolean.TRUE);
+            }
+        }
+
+    }
+
     public void processButtonOnAction(ActionEvent actionEvent) throws Exception {
 
         try {
@@ -252,10 +283,20 @@ public class mainController implements Initializable {
             return;
         }
 
+        UpdateTableThreadListener updateTableThreadListener = new UpdateTableThreadListener();
+
         TJLoader tjLoader = new TJLoader();
         tjLoader.readersCount = 1;
         tjLoader.writersCount = 1;
         tjLoader.filesTableView = filesTableView;
+        tjLoader.addListener(updateTableThreadListener);
+
+        rowsByFile = new HashMap<>();
+        for (TableRow tableRow: data) {
+            String fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
+            rowsByFile.put(fileName, tableRow);
+        }
+
         tjLoader.processAllFiles(data);
 
     }

@@ -39,7 +39,7 @@
                <Insets right="10.0" top="5.0" />
             </GridPane.margin>
       </Button>
-         <Button defaultButton="true" mnemonicParsing="false" onAction="#processButtonOnAction" text="Обработать" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
+         <Button fx:id="processButton"  defaultButton="true" mnemonicParsing="false" onAction="#processButtonOnAction" text="Обработать" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
             <GridPane.margin>
                <Insets right="10.0" />
             </GridPane.margin>
@@ -73,12 +73,12 @@
             <Insets left="10.0" />
          </padding>
       </Label>
-      <Button mnemonicParsing="false" onAction="#findFilesButtonOnAction" text="Найти файлы" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
+      <Button fx:id="findFilesButton"  mnemonicParsing="false" onAction="#findFilesButtonOnAction" text="Найти файлы" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
          <GridPane.margin>
             <Insets right="100.0" />
          </GridPane.margin>
       </Button>
-      <Button mnemonicParsing="false" onAction="#clearTableButtonOnAction" text="Очистить таблицу" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
+      <Button fx:id="clearTableButton"  mnemonicParsing="false" onAction="#clearTableButtonOnAction" text="Очистить таблицу" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3">
          <GridPane.margin>
             <Insets right="195.0" />
          </GridPane.margin>

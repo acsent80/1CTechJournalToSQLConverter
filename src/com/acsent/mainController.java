@@ -1,5 +1,6 @@
 package com.acsent;
 
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -17,6 +18,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -44,6 +46,10 @@ public class mainController implements Initializable {
     TableColumn<TableRow, String> tableFileName;
     @FXML
     TableColumn<TableRow, Long> tableFileSize;
+    @FXML
+    TableColumn<TableRow, String> tableStatus;
+    @FXML
+    TableColumn<TableRow, Integer> tableQty;
 
     @FXML
     TextField connectionStringText;
@@ -59,6 +65,16 @@ public class mainController implements Initializable {
         private final SimpleStringProperty dirName;
         private final SimpleStringProperty fileName;
         private final SimpleLongProperty fileSize;
+        private final SimpleStringProperty status;
+        private final SimpleIntegerProperty qty;
+
+        private TableRow() {
+            this.dirName  = new SimpleStringProperty(null);
+            this.fileName = new SimpleStringProperty(null);
+            this.fileSize = new SimpleLongProperty(0L);
+            this.status   = new SimpleStringProperty(null);
+            this.qty      = new SimpleIntegerProperty(0);
+        }
 
         private TableRow(File file) {
 
@@ -68,6 +84,8 @@ public class mainController implements Initializable {
             Long size = file.length();
             size = size / (1024 * 1024);
             this.fileSize = new SimpleLongProperty(size);
+            this.status   = new SimpleStringProperty("");
+            this.qty      = new SimpleIntegerProperty(0);
         }
 
         public String getDirName() {
@@ -94,6 +112,21 @@ public class mainController implements Initializable {
             fileSize.set(value);
         }
 
+        public String getStatus() {
+            return status.get();
+        }
+
+        public void setStatus(String value) {
+            status.set(value);
+        }
+
+        public void setQty(Integer value) {
+            qty.set(value);
+        }
+
+        public Integer getQty() {
+            return qty.get();
+        }
     }
 
     public void setStage(Stage stage) {
@@ -111,9 +144,11 @@ public class mainController implements Initializable {
         connectionStringText.setText("D:\\Temp");
 
         // Привязка таблицы к данным
-        tableDirName.setCellValueFactory(new PropertyValueFactory<>("dirName"));
+        tableDirName. setCellValueFactory(new PropertyValueFactory<>("dirName"));
         tableFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
         tableFileSize.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
+        tableStatus.  setCellValueFactory(new PropertyValueFactory<>("status"));
+        tableQty.     setCellValueFactory(new PropertyValueFactory<>("qty"));
 
         filesTableView.setItems(data);
 
@@ -185,6 +220,7 @@ public class mainController implements Initializable {
             messageLabel.setText(e.toString());
             e.printStackTrace();
         }
+
     }
 
     public void processButtonOnAction(ActionEvent actionEvent) throws Exception {
@@ -201,20 +237,15 @@ public class mainController implements Initializable {
             return;
         }
 
-        BlockingQueue<String> filesQueue          = new ArrayBlockingQueue<>(data.size() + 1, true);
-        BlockingQueue<String> processedFilesQueue = new ArrayBlockingQueue<>(data.size() + 1, true);
+        BlockingQueue<TableRow> rowsQueue = new ArrayBlockingQueue<>(data.size() + 1, true);
 
-        for (TableRow tableRow: data) {
+        rowsQueue.addAll(data.stream().collect(Collectors.toList()));
 
-            String dirName  = tableRow.getDirName();
-            String fileName = tableRow.getFileName();
+        TableRow endRow = new TableRow();
+        rowsQueue.add(endRow);
 
-            filesQueue.add(dirName + "\\" + fileName);
-        }
-        filesQueue.add("DONE");
-
-        Thread thread = new Thread(new ReadFromTJThread(filesQueue, processedFilesQueue, 1));
-        thread.start();
+        Thread thread1 = new Thread(new ReadFromTJThread(filesTableView, rowsQueue, 1));
+        thread1.start();
 
     }
 
@@ -223,14 +254,14 @@ public class mainController implements Initializable {
 class ReadFromTJThread implements Runnable {
 
     private BlockingQueue<HashMap<String, String>> tokensQueue;
-    private BlockingQueue<String> filesQueue;
-    private BlockingQueue<String> processedFilesQueue;
+    private TableView<mainController.TableRow> filesTableView;
+    private BlockingQueue<mainController.TableRow> rowsQueue;
     private int writersCount;
 
-    public ReadFromTJThread(BlockingQueue<String> filesQueue, BlockingQueue<String> processedFilesQueue, int writersCount) {
-        this.filesQueue          = filesQueue;
-        this.processedFilesQueue = processedFilesQueue;
-        this.writersCount        = writersCount;
+    public ReadFromTJThread(TableView<mainController.TableRow> filesTableView, BlockingQueue<mainController.TableRow> rowsQueue, int writersCount) {
+        this.filesTableView     = filesTableView;
+        this.rowsQueue          = rowsQueue;
+        this.writersCount       = writersCount;
     }
 
     @Override
@@ -240,17 +271,21 @@ class ReadFromTJThread implements Runnable {
 
             try {
 
-                String fileName = filesQueue.take();
-                if (fileName.equals("DONE")) {
-                    break;
-                }
+                mainController.TableRow tableRow = rowsQueue.take();
+
+                if (tableRow.getDirName() == null) break;
+
+                tableRow.setStatus("+");
+                filesTableView.refresh();
+
+                String fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
 
                 // auto start queue reader
                 if (tokensQueue == null) {
-                    tokensQueue = new ArrayBlockingQueue<>(128, true);
+                    tokensQueue = new ArrayBlockingQueue<>(128 * writersCount, true);
 
                     for (int i = 1; i <= writersCount; i++){
-                        (new Thread(new WriteToSQLThread(tokensQueue))).start();
+                       (new Thread(new WriteToSQLThread(tokensQueue, filesTableView, tableRow))).start();
                     }
                 }
 
@@ -270,7 +305,8 @@ class ReadFromTJThread implements Runnable {
 
                     tokensQueue.put(tokens);
                     counter++;
-                    if (counter == 300) break;
+                    //System.out.println(counter);
+                    if (counter == 1000) break;
                 }
 
                 HashMap<String, String> endOfQueue = new HashMap<>();
@@ -278,8 +314,6 @@ class ReadFromTJThread implements Runnable {
                 tokensQueue.put(endOfQueue);
 
                 parser.closeFile();
-
-                processedFilesQueue.add(fileName);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -292,10 +326,14 @@ class ReadFromTJThread implements Runnable {
 
 class WriteToSQLThread implements Runnable {
 
-     private BlockingQueue<HashMap<String, String>> queue;
+    private BlockingQueue<HashMap<String, String>> queue;
+    private TableView<mainController.TableRow> filesTableView;
+    private mainController.TableRow tableRow;
 
-     public WriteToSQLThread(BlockingQueue<HashMap<String, String>> queue) {
-         this.queue = queue;
+     public WriteToSQLThread(BlockingQueue<HashMap<String, String>> queue, TableView<mainController.TableRow> filesTableView, mainController.TableRow tableRow) {
+         this.queue          = queue;
+         this.filesTableView = filesTableView;
+         this.tableRow       = tableRow;
      }
 
      @Override
@@ -341,6 +379,10 @@ class WriteToSQLThread implements Runnable {
                      db.insertValues("logs", fields, tokens);
                      if (counter % 100 == 0) {
                          db.execute("COMMIT");
+
+                         tableRow.setQty(counter);
+                         filesTableView.refresh();
+
                          db.execute("BEGIN TRANSACTION");
                      }
 
@@ -348,6 +390,10 @@ class WriteToSQLThread implements Runnable {
                      e.printStackTrace();
                  }
              }
+
+             tableRow.setStatus("V");
+             tableRow.setQty(counter);
+             filesTableView.refresh();
 
              try {
                  db.execute("COMMIT");

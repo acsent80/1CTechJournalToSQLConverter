@@ -2,7 +2,10 @@
   <dictionary name="msk5446">
     <words>
       <w>acsent</w>
+      <w>dbpid</w>
+      <w>descr</w>
       <w>jdbc</w>
+      <w>mssql</w>
       <w>rphost</w>
       <w>sqlite</w>
       <w>sqlserver</w>

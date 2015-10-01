@@ -55,7 +55,9 @@
         <columns>
           <TableColumn fx:id="tableDirName" prefWidth="157.0" text="Каталог" />
           <TableColumn fx:id="tableFileName" prefWidth="152.0" text="Файл" />
-          <TableColumn fx:id="tableFileSize" prefWidth="196.0" text="Размер, Мб" />
+          <TableColumn fx:id="tableFileSize" prefWidth="80.0" text="Размер, Мб" />
+          <TableColumn fx:id="tableStatus" prefWidth="30.0" text="Статус" />
+          <TableColumn fx:id="tableQty" prefWidth="50.0" text="Количество" />
         </columns>
          <GridPane.margin>
             <Insets left="10.0" right="10.0" top="5.0" />

@@ -35,7 +35,8 @@ public class TJLoader {
 
     class ParserTask implements Runnable {
 
-        mainController.TableRow tableRow;
+        private mainController.TableRow tableRow;
+        private volatile int processedTokensCount = 0;
 
         public ParserTask(mainController.TableRow tableRow) {
             this.tableRow = tableRow;
@@ -74,10 +75,9 @@ public class TJLoader {
                 while (parser.hasNext()) {
 
                     tokens = parser.next();
-
                     tokensQueue.put(tokens);
+
                     counter++;
-                    System.out.println(counter);
                     if (counter == 300) break;
                 }
 
@@ -93,92 +93,97 @@ public class TJLoader {
             }
 
         }
-    }
 
-    class DBTask implements Runnable {
+        class DBTask implements Runnable {
 
-        private BlockingQueue<HashMap<String, String>> queue;
-        private mainController.TableRow tableRow;
+            private BlockingQueue<HashMap<String, String>> queue;
+            private mainController.TableRow tableRow;
 
-        public DBTask(BlockingQueue<HashMap<String, String>> queue, mainController.TableRow tableRow) {
-            this.queue          = queue;
-            this.tableRow       = tableRow;
-        }
-
-        @Override
-        public void run() {
-
-            DBTools db = new DBTools("sqlite");
-
-            try {
-                db.connect("", "TEST1", "", "", true);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return;
+            public DBTask(BlockingQueue<HashMap<String, String>> queue, mainController.TableRow tableRow) {
+                this.queue          = queue;
+                this.tableRow       = tableRow;
             }
 
-            ArrayList<String> fields;
-            try {
-                fields = db.getTableColumns("logs");
-            } catch (Exception e) {
-                e.printStackTrace();
-                return;
-            }
+            @Override
+            public void run() {
 
-            try {
-                db.execute("PRAGMA journal_mode = MEMORY");
-                db.execute("BEGIN TRANSACTION");
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            int counter = 0;
-            try {
-                HashMap<String, String> tokens;
-                while (true) {
-
-                    tokens = queue.take();
-
-                    if (tokens.get("DONE") != null) {
-                        break;
-                    }
-
-                    counter++;
-                    System.out.println(counter);
-
-                    try {
-                        db.insertValues("logs", fields, tokens);
-                        if (counter % 100 == 0) {
-                            db.execute("COMMIT");
-
-                            tableRow.setQty(counter);
-                            filesTableView.refresh();
-
-                            db.execute("BEGIN TRANSACTION");
-                        }
-
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                tableRow.setStatus("V");
-                tableRow.setQty(counter);
-                filesTableView.refresh();
+                DBTools db = new DBTools("sqlite");
 
                 try {
-                    db.execute("COMMIT");
-                    db.close();
+                    db.connect("", "TEST1", "", "", true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return;
+                }
+
+                ArrayList<String> fields;
+                try {
+                    fields = db.getTableColumns("logs");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return;
+                }
+
+                try {
+                    db.execute("PRAGMA journal_mode = MEMORY");
+                    db.execute("BEGIN TRANSACTION");
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
 
-            } catch (InterruptedException intEx) {
-                System.out.println("Interrupted! " +
-                        "Last one out, turn out the lights!");
-            }
+                int counter = 0;
+                try {
+                    HashMap<String, String> tokens;
+                    while (true) {
 
+                        tokens = queue.take();
+
+                        if (tokens.get("DONE") != null) {
+                            break;
+                        }
+
+                        counter++;
+
+                        try {
+                            db.insertValues("logs", fields, tokens);
+
+                            if (counter % 10 == 0) {
+                                processedTokensCount += 10;
+                                tableRow.setQty(processedTokensCount);
+                                filesTableView.refresh();
+                            }
+
+                            if (counter % 100 == 0) {
+                                db.execute("COMMIT");
+
+                                db.execute("BEGIN TRANSACTION");
+                            }
+
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    tableRow.setStatus("V");
+                    tableRow.setQty(counter);
+                    filesTableView.refresh();
+
+                    try {
+                        db.execute("COMMIT");
+                        db.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
+                } catch (InterruptedException intEx) {
+                    System.out.println("Interrupted! " +
+                            "Last one out, turn out the lights!");
+                }
+
+            }
         }
+
     }
+
 
 }

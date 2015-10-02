@@ -224,7 +224,7 @@ public class mainController implements Initializable {
             return;
         }
 
-        DBTools db = new DBTools("sqlite");
+        DBTools db = new DBTools(DBTools.DriverType.SQLite);
         try {
 
             db.connect("", "TEST1", "", "", true);
@@ -284,7 +284,7 @@ public class mainController implements Initializable {
 
         try {
 
-            DBTools db = new DBTools("sqlite");
+            DBTools db = new DBTools(DBTools.DriverType.SQLite);
             db.connect("", "TEST1", "", "", true);
             db.execSQLFromResource("/create.sql");
             db.close();
@@ -300,6 +300,13 @@ public class mainController implements Initializable {
         tjLoader.readersCount = 1;
         tjLoader.writersCount = 1;
         tjLoader.addListener(updateTableThreadListener);
+
+        tjLoader.driverType   = DBTools.DriverType.SQLite;
+        tjLoader.serverName   = "";
+        tjLoader.databaseName = "TEST1";
+        tjLoader.user         = "";
+        tjLoader.password     = "";
+        tjLoader.integretedSecurity = false;
 
         ArrayList<String> filesArrayList = new ArrayList<>();
 

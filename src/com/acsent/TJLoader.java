@@ -1,6 +1,7 @@
 package com.acsent;
 
 import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +10,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TJLoader {
+
+    public DBTools.DriverType driverType;
+    public String serverName;
+    public String databaseName;
+    public String user;
+    public String password;
+    public boolean integretedSecurity;
 
     public int readersCount;
     public int writersCount;
@@ -47,7 +55,6 @@ public class TJLoader {
     //   class ParserTask implements Runnable {
     class ParserTask extends Thread {
 
-        private mainController.TableRow tableRow;
         private AtomicInteger processedTokensCount;
         private AtomicBoolean done;
         private CountDownLatch doneSignal;
@@ -127,10 +134,10 @@ public class TJLoader {
             @Override
             public void run() {
 
-                DBTools db = new DBTools("sqlite");
+                DBTools db = new DBTools(driverType);
 
                 try {
-                    db.connect("", "TEST1", "", "", true);
+                    db.connect(serverName, databaseName, user, password, integretedSecurity);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return;
@@ -144,10 +151,19 @@ public class TJLoader {
                     return;
                 }
 
+                PreparedStatement preparedStatement;
+                try {
+                    preparedStatement = db.prepareInsertStatement("logs", fields);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return;
+                }
+
                 try {
                     db.beginTransaction();
                 } catch (SQLException e) {
                     e.printStackTrace();
+                    return;
                 }
 
                 int counter = 0;
@@ -162,7 +178,7 @@ public class TJLoader {
 
                         try {
 
-                            db.insertValues("logs", fields, tokens);
+                            db.insertValues(preparedStatement, fields, tokens);
 
                             if (counter % listenerPortionSize == 0) {
 

@@ -9,17 +9,19 @@ import java.util.Scanner;
 class DBTools {
 
     private Connection connection;
-    private String driverName;
+    private DriverType driverType;
 
-    public DBTools(String driverName) {
-        this.driverName = driverName;
+    public enum DriverType{SQLite, MSSQL}
+
+    public DBTools(DriverType driverType) {
+        this.driverType = driverType;
     }
 
     public void connect(String serverName, String dbName, String user, String password, boolean integratedSecurity) throws SQLException, ClassNotFoundException {
 
-        if (driverName.equals("sqlite")) {
+        if (driverType == DriverType.SQLite) {
             connectSQLite(dbName);
-        } else if (driverName.equals("mssql")) {
+        } else if (driverType == DriverType.MSSQL) {
             connectMSSQL(serverName, dbName, user, password, integratedSecurity);
         }
 
@@ -48,21 +50,20 @@ class DBTools {
     }
 
     public void beginTransaction() throws SQLException {
-        if (driverName.equals("sqlite")) {
+        if (driverType == DriverType.SQLite) {
             execute("PRAGMA journal_mode = MEMORY");
             execute("BEGIN TRANSACTION");
         }
     }
 
     public void commitTransaction() throws SQLException {
-        if (driverName.equals("sqlite")) {
+        if (driverType == DriverType.SQLite) {
             execute("COMMIT");
         }
     }
 
-    public void insertValues(String tableName, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {
+    PreparedStatement prepareInsertStatement(String tableName, ArrayList<String> fields) throws SQLException {
 
-        //System.out.println(values);
         StringBuilder sqlText = new StringBuilder(1024);
         sqlText.append("INSERT INTO ").append(tableName).append("(");
 
@@ -71,38 +72,38 @@ class DBTools {
 
         for (String field : fields) {
 
-            String fieldValue = values.get(field);
-            if (fieldValue != null) {
-
-                if (strFields.length() > 0) {
-                    strFields.append(", ");
-                    strValues.append(", ");
-                }
-                strFields.append(field);
-                strValues.append("?");
+            if (strFields.length() > 0) {
+                strFields.append(", ");
+                strValues.append(", ");
             }
+            strFields.append(field);
+            strValues.append("?");
         }
+
         sqlText.append(strFields);
         sqlText.append(") VALUES (");
         sqlText.append(strValues);
         sqlText.append(")");
 
+        return connection.prepareStatement(sqlText.toString());
+        
+    }
+
+    public void insertValues(PreparedStatement preparedStatement, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {
+
         int fieldNumber = 1;
-        PreparedStatement preparedStatement = connection.prepareStatement(sqlText.toString());
         for (String field : fields) {
 
             String fieldValue = values.get(field);
-            if (fieldValue != null) {
-                preparedStatement.setString(fieldNumber, fieldValue);
-                fieldNumber++;
-            }
+            preparedStatement.setString(fieldNumber, fieldValue);
+
+            fieldNumber++;
         }
 
         preparedStatement.execute();
-
     }
 
-    public ArrayList<String> getTableColumns(String tableName) throws SQLException  {
+     public ArrayList<String> getTableColumns(String tableName) throws SQLException  {
 
         ArrayList<String> arrayList = new ArrayList<>();
 

@@ -65,6 +65,7 @@ public class optionsController implements Initializable {
 
         stage.close();
     }
+    
     public void dbDriverComboBoxOnAction(ActionEvent actionEvent) throws IOException {
         setControlStatus();
     }

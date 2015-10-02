@@ -1,6 +1,5 @@
 package com.acsent;
 
-import com.sun.javafx.scene.control.skin.TableViewSkinBase;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,6 +12,7 @@ import javafx.fxml.Initializable;
 import java.io.*;
 import java.net.URL;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -228,7 +228,7 @@ public class mainController implements Initializable {
         try {
 
             db.connect("", "TEST1", "", "", true);
-            db.execSQLfromResource("/create.sql");
+            db.execSQLFromResource("/create.sql");
             db.execute("DELETE FROM [logs]");
             db.close();
 
@@ -243,7 +243,7 @@ public class mainController implements Initializable {
 
     class UpdateTableThreadListener implements TJLoader.ThreadListener {
 
-        public void onProgress(String fileName, TJLoader.Status status, int counter) {
+        public synchronized void setProgress(String fileName, int counter) {
 
             TableRow tableRow = rowsByFile.get(fileName);
 
@@ -251,7 +251,20 @@ public class mainController implements Initializable {
 
                 if (counter != 0) {
                     tableRow.setQty(counter);
+                    System.out.println(counter);
                 }
+
+                 filesTableView.refresh();
+                //filesTableView.getProperties().put(TableViewSkinBase.REFRESH, Boolean.TRUE);
+            }
+        }
+
+
+        public synchronized void setStatus(String fileName, TJLoader.Status status) {
+
+            TableRow tableRow = rowsByFile.get(fileName);
+
+            if (tableRow != null) {
 
                 if (status == TJLoader.Status.BEGIN) {
                     tableRow.setStatus("+");
@@ -259,8 +272,6 @@ public class mainController implements Initializable {
                     tableRow.setStatus("V");
                     System.out.println("end");
                 }
-
-                System.out.println(counter);
 
                 filesTableView.refresh();
                 //filesTableView.getProperties().put(TableViewSkinBase.REFRESH, Boolean.TRUE);
@@ -275,7 +286,7 @@ public class mainController implements Initializable {
 
             DBTools db = new DBTools("sqlite");
             db.connect("", "TEST1", "", "", true);
-            db.execSQLfromResource("/create.sql");
+            db.execSQLFromResource("/create.sql");
             db.close();
 
         } catch (SQLException e) {
@@ -288,16 +299,18 @@ public class mainController implements Initializable {
         TJLoader tjLoader = new TJLoader();
         tjLoader.readersCount = 1;
         tjLoader.writersCount = 1;
-        tjLoader.filesTableView = filesTableView;
         tjLoader.addListener(updateTableThreadListener);
+
+        ArrayList<String> filesArrayList = new ArrayList<>();
 
         rowsByFile = new HashMap<>();
         for (TableRow tableRow: data) {
             String fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
             rowsByFile.put(fileName, tableRow);
+            filesArrayList.add(fileName);
         }
 
-        tjLoader.processAllFiles(data);
+        tjLoader.processAllFiles(filesArrayList);
 
     }
 

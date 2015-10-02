@@ -47,6 +47,19 @@ class DBTools {
 
     }
 
+    public void beginTransaction() throws SQLException {
+        if (driverName.equals("sqlite")) {
+            execute("PRAGMA journal_mode = MEMORY");
+            execute("BEGIN TRANSACTION");
+        }
+    }
+
+    public void commitTransaction() throws SQLException {
+        if (driverName.equals("sqlite")) {
+            execute("COMMIT");
+        }
+    }
+
     public void insertValues(String tableName, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {
 
         //System.out.println(values);
@@ -108,7 +121,7 @@ class DBTools {
         connection.close();
     }
 
-    public void execSQLfromResource(String resourceName) throws SQLException {
+    public void execSQLFromResource(String resourceName) throws SQLException {
 
         InputStream inputStream = Main.class.getResourceAsStream(resourceName);
 

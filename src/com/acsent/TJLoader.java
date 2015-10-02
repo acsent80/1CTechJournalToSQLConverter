@@ -1,13 +1,11 @@
 package com.acsent;
 
-import javafx.collections.ObservableList;
-import javafx.scene.control.TableView;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TJLoader {
@@ -15,7 +13,6 @@ public class TJLoader {
     public int readersCount;
     public int writersCount;
     public boolean oneReaderPerFile = false;
-    public TableView<mainController.TableRow> filesTableView;
 
     private ThreadListener threadListener;
 
@@ -24,22 +21,23 @@ public class TJLoader {
     public TJLoader() {
     }
 
-    public void processAllFiles(ObservableList<mainController.TableRow> data) {
+    public void processAllFiles(ArrayList<String> filesArrayList) {
 
         if (oneReaderPerFile) {
-            readersCount = data.size();
+            readersCount = filesArrayList.size();
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(readersCount);
-        data.forEach(tableRow ->
-                executorService.submit(new ParserTask(tableRow)));
+        filesArrayList.forEach(fileName ->
+                executorService.submit(new ParserTask(fileName)));
 
         executorService.shutdown();
 
     }
 
     public interface ThreadListener {
-        void onProgress(String fileName, Status status, int counter);
+        void setProgress(String fileName, int counter);
+        void setStatus(String fileName, Status status);
     }
 
     public void addListener(ThreadListener threadListener) {
@@ -51,11 +49,12 @@ public class TJLoader {
 
         private mainController.TableRow tableRow;
         private AtomicInteger processedTokensCount;
+        private AtomicBoolean done;
+        private CountDownLatch doneSignal;
         private String fileName;
 
-        public ParserTask(mainController.TableRow tableRow) {
-            this.tableRow = tableRow;
-            this.fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
+        public ParserTask(String fileName) {
+            this.fileName = fileName;
         }
 
         @Override
@@ -63,10 +62,12 @@ public class TJLoader {
 
             super.run();
             if (threadListener != null) {
-                threadListener.onProgress(fileName, Status.BEGIN, 0);
+                threadListener.setStatus(fileName, Status.BEGIN);
             }
 
             processedTokensCount = new AtomicInteger(0);
+            done = new AtomicBoolean(false);
+            doneSignal = new CountDownLatch(writersCount);
 
             try {
 
@@ -75,7 +76,7 @@ public class TJLoader {
                 ExecutorService executorService = Executors.newFixedThreadPool(writersCount);
 
                 for (int i = 0; i < writersCount; i++) {
-                    executorService.submit(new DBTask(tokensQueue, tableRow));
+                    executorService.submit(new DBTask(tokensQueue));
                 }
 
                 HashMap<String, String> tokens;
@@ -96,15 +97,18 @@ public class TJLoader {
                     tokensQueue.put(tokens);
 
                     counter++;
-                    if (counter == 1000) break;
+                    if (counter == 500) break;
                 }
 
-                HashMap<String, String> endOfQueue = new HashMap<>();
-                endOfQueue.put("DONE", "DONE");
-                tokensQueue.put(endOfQueue);
+                done.set(true);
 
                 executorService.shutdown();
                 parser.closeFile();
+
+                if (threadListener != null) {
+                    doneSignal.await();
+                    threadListener.setStatus(fileName, Status.DONE);
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -114,12 +118,10 @@ public class TJLoader {
 
         class DBTask implements Runnable {
 
-            private BlockingQueue<HashMap<String, String>> queue;
-            private mainController.TableRow tableRow;
+            private BlockingQueue<HashMap<String, String>> tokensQueue;
 
-            public DBTask(BlockingQueue<HashMap<String, String>> queue, mainController.TableRow tableRow) {
-                this.queue          = queue;
-                this.tableRow       = tableRow;
+            public DBTask(BlockingQueue<HashMap<String, String>> tokensQueue) {
+                this.tokensQueue = tokensQueue;
             }
 
             @Override
@@ -143,43 +145,37 @@ public class TJLoader {
                 }
 
                 try {
-                    db.execute("PRAGMA journal_mode = MEMORY");
-                    db.execute("BEGIN TRANSACTION");
+                    db.beginTransaction();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
 
                 int counter = 0;
-                int portionSize = 50;
+                int listenerPortionSize = 50;
+                int dbPortionSize = 100;
 
                 try {
-                    HashMap<String, String> tokens;
-                    while (true) {
+                    while (!done.get() || !tokensQueue.isEmpty()) {
 
-                        tokens = queue.take();
-
-                        if (tokens.get("DONE") != null) {
-                            break;
-                        }
-
+                        HashMap<String, String> tokens = tokensQueue.take();
                         counter++;
 
                         try {
+
                             db.insertValues("logs", fields, tokens);
 
-                            if (counter % portionSize == 0) {
+                            if (counter % listenerPortionSize == 0) {
 
                                 if (threadListener != null) {
-                                    int value = processedTokensCount.addAndGet(portionSize);
-                                    threadListener.onProgress(fileName, null, value);
+                                    int value = processedTokensCount.addAndGet(listenerPortionSize);
+                                    threadListener.setProgress(fileName, value);
                                 }
 
                             }
 
-                            if (counter % 100 == 0) {
-                                db.execute("COMMIT");
-
-                                db.execute("BEGIN TRANSACTION");
+                            if (counter % dbPortionSize == 0) {
+                                db.commitTransaction();
+                                db.beginTransaction();
                             }
 
                         } catch (SQLException e) {
@@ -187,14 +183,20 @@ public class TJLoader {
                         }
                     }
 
-                    if (threadListener != null) {
+                    if (threadListener != null && (counter % listenerPortionSize != 0)) {
+                        int value = processedTokensCount.addAndGet(counter % listenerPortionSize);
+                        threadListener.setProgress(fileName, value);
+                    }
 
-                        int value = processedTokensCount.addAndGet(portionSize);
-                        threadListener.onProgress(fileName, Status.DONE, value);
+                    doneSignal.countDown();
+
+                    try {
+                        db.commitTransaction();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
 
                     try {
-                        db.execute("COMMIT");
                         db.close();
                     } catch (SQLException e) {
                         e.printStackTrace();

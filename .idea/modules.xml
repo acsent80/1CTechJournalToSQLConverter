@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/myFirstJavaApp.iml" filepath="$PROJECT_DIR$/myFirstJavaApp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TechJournalLogToSQLConverter.iml" filepath="$PROJECT_DIR$/TechJournalLogToSQLConverter.iml" />
     </modules>
   </component>
 </project>

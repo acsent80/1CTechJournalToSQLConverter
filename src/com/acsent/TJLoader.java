@@ -17,7 +17,7 @@ public class TJLoader {
     public String tableName;
     public String user;
     public String password;
-    public boolean integretedSecurity;
+    public boolean integratedSecurity;
 
     public int readersCount;
     public int writersCount;
@@ -138,7 +138,7 @@ public class TJLoader {
                 DBTools db = new DBTools(driverType);
 
                 try {
-                    db.connect(serverName, databaseName, user, password, integretedSecurity);
+                    db.connect(serverName, databaseName, user, password, integratedSecurity);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return;

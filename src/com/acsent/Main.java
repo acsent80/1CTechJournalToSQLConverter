@@ -25,7 +25,7 @@ public class Main extends Application {
         Scene scene = new Scene(root, 500, 400);
         primaryStage.setScene(scene);
 
-        primaryStage.setTitle("My first java fx app");
+        primaryStage.setTitle("1C Tech Journal Log To SQL Converter");
         primaryStage.show();
 
     }

@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -25,6 +26,10 @@ public class optionsController implements Initializable {
     TextField databaseText;
     @FXML
     TextField tableText;
+    @FXML
+    TextField userText;
+    @FXML
+    PasswordField passwordText;
     @FXML
     Button selectDatabaseButton;
 
@@ -60,12 +65,14 @@ public class optionsController implements Initializable {
         prefs.put("Server",   serverText.getText());
         prefs.put("Database", databaseText.getText());
         prefs.put("Table",    tableText.getText());
+        prefs.put("user",     userText.getText());
+        prefs.put("password", passwordText.getText());
 
         prefs.put("dbDriver", dbDriverComboBox.getValue());
 
         stage.close();
     }
-    
+
     public void dbDriverComboBoxOnAction(ActionEvent actionEvent) throws IOException {
         setControlStatus();
     }
@@ -91,9 +98,13 @@ public class optionsController implements Initializable {
         String dbDriver = dbDriverComboBox.getValue();
         if (dbDriver.equals("SQLite")) {
             serverText.setDisable(true);
+            userText.setDisable(true);
+            passwordText.setDisable(true);
             selectDatabaseButton.setDisable(false);
         } else {
             serverText.setDisable(false);
+            userText.setDisable(false);
+            passwordText.setDisable(false);
             selectDatabaseButton.setDisable(true);
         }
     }

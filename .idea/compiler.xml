@@ -22,13 +22,11 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="myFirstJavaApp" />
         <module name="TechJournalLogToSQLConverter" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="myFirstJavaApp" target="1.8" />
-      <module name="TechJournalLogToSQLConverter" target="1.5" />
+    <bytecodeTargetLevel target="1.8">
+      <module name="TechJournalLogToSQLConverter" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

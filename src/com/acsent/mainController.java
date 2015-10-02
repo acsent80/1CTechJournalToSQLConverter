@@ -341,7 +341,7 @@ public class mainController implements Initializable {
         tjLoader.tableName    = tableName;
         tjLoader.user         = user;
         tjLoader.password     = password;
-        tjLoader.integretedSecurity = is;
+        tjLoader.integratedSecurity = is;
 
         ArrayList<String> filesArrayList = new ArrayList<>();
 

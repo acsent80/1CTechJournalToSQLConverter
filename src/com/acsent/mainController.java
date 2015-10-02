@@ -216,23 +216,38 @@ public class mainController implements Initializable {
 
     public void clearTableButtonOnAction(ActionEvent actionEvent) {
 
+        Preferences prefs = Preferences.userNodeForPackage(Main.class);
+        String tableName = prefs.get("Table", "logs");
+
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.initStyle(StageStyle.UTILITY);
         alert.setTitle("Confirmation Dialog");
-        alert.setHeaderText("Clear table 'logs'?");
-        //alert.setContentText("Clear table 'logs'?");
+        alert.setHeaderText("Clear table '" + tableName + "'?");
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.get() != ButtonType.OK) {
             return;
         }
 
-        DBTools db = new DBTools(DBTools.DriverType.SQLite);
+        DBTools.DriverType driverType= DBTools.DriverType.SQLite;
+        String driverTypeAsString = prefs.get("dbDriver", "SQLite");
+        if (driverTypeAsString.equals("MS SQL")) {
+            driverType = DBTools.DriverType.MSSQL;
+        }
+
+
+        String serverName   = prefs.get("Server",   "");
+        String databaseName = prefs.get("Database", "logs");
+        String user         = prefs.get("user",     "");
+        String password     = prefs.get("password", "");
+        boolean is          = prefs.getBoolean("IntegratedSecurity", false);
+
         try {
 
-            db.connect("", "TEST1", "", "", true);
-            db.execSQLFromResource("/create.sql");
-            db.execute("DELETE FROM [logs]");
+            DBTools db = new DBTools(driverType);
+            db.connect(serverName, databaseName, user, password, is);
+            db.createTable(tableName);
+            db.execute("DELETE FROM [" + tableName + "]");
             db.close();
 
             messageLabel.setText("Таблица очищена");
@@ -285,11 +300,27 @@ public class mainController implements Initializable {
 
     public void processButtonOnAction(ActionEvent actionEvent) throws Exception {
 
+        Preferences prefs = Preferences.userNodeForPackage(Main.class);
+
+        DBTools.DriverType driverType= DBTools.DriverType.SQLite;
+        String driverTypeAsString = prefs.get("dbDriver", "SQLite");
+        if (driverTypeAsString.equals("MS SQL")) {
+            driverType = DBTools.DriverType.MSSQL;
+        }
+
+        String serverName   = prefs.get("Server",   "");
+        String databaseName = prefs.get("Database", "logs");
+        String tableName    = prefs.get("Table",    "logs");
+        String user         = prefs.get("user",     "");
+        String password     = prefs.get("password", "");
+        boolean is          = prefs.getBoolean("IntegratedSecurity", false);
+
         try {
 
-            DBTools db = new DBTools(DBTools.DriverType.SQLite);
-            db.connect("", "TEST1", "", "", true);
-            db.execSQLFromResource("/create.sql");
+            DBTools db = new DBTools(driverType);
+
+            db.connect(serverName, databaseName, user, password, is);
+            db.createTable(tableName);
             db.close();
 
         } catch (SQLException e) {
@@ -304,12 +335,13 @@ public class mainController implements Initializable {
         tjLoader.writersCount = 1;
         tjLoader.addListener(updateTableThreadListener);
 
-        tjLoader.driverType = DBTools.DriverType.SQLite;
-        tjLoader.serverName = "";
-        tjLoader.databaseName = "TEST1";
-        tjLoader.user = "";
-        tjLoader.password = "";
-        tjLoader.integretedSecurity = false;
+        tjLoader.driverType   = driverType;
+        tjLoader.serverName   = serverName;
+        tjLoader.databaseName = databaseName;
+        tjLoader.tableName    = tableName;
+        tjLoader.user         = user;
+        tjLoader.password     = password;
+        tjLoader.integretedSecurity = is;
 
         ArrayList<String> filesArrayList = new ArrayList<>();
 

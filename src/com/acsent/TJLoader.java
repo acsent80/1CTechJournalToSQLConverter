@@ -14,6 +14,7 @@ public class TJLoader {
     public DBTools.DriverType driverType;
     public String serverName;
     public String databaseName;
+    public String tableName;
     public String user;
     public String password;
     public boolean integretedSecurity;
@@ -145,7 +146,7 @@ public class TJLoader {
 
                 ArrayList<String> fields;
                 try {
-                    fields = db.getTableColumns("logs");
+                    fields = db.getTableColumns(tableName);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return;
@@ -153,7 +154,7 @@ public class TJLoader {
 
                 PreparedStatement preparedStatement;
                 try {
-                    preparedStatement = db.prepareInsertStatement("logs", fields);
+                    preparedStatement = db.prepareInsertStatement(tableName, fields);
                 } catch (SQLException e) {
                     e.printStackTrace();
                     return;

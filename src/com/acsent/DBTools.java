@@ -122,7 +122,47 @@ class DBTools {
         connection.close();
     }
 
-    public void execSQLFromResource(String resourceName) throws SQLException {
+    public void createTable(String tableName) throws SQLException {
+
+        String sqlText =
+        "CREATE TABLE if not exists [logs](       \n" +
+        "    [DateTime] [datetime] NULL,          \n" +
+        "    [FileName] [char](200) NULL,         \n" +
+        "    [Moment] [char](12) NULL,            \n" +
+        "    [Duration] [numeric](18, 5) NULL,    \n" +
+        "    [Name] [char](15) NULL,              \n" +
+        "    [Process] [char](50) NULL,           \n" +
+        "    [Level] [char](3) NULL,              \n" +
+        "    [ProcessName] [char](50) NULL,       \n" +
+        "    [text] [varchar](500) NULL,          \n" +
+        "    [EventNumber] [int] NULL,            \n" +
+        "    [t_clientID] [char](10) NULL,        \n" +
+        "    [t_applicationName] [char](50) NULL, \n" +
+        "    [t_computerName] [char](50) NULL,    \n" +
+        "    [t_connectID] [char](10) NULL,       \n" +
+        "    [SessionID] [char](10) NULL,         \n" +
+        "    [Usr] [char](100) NULL,              \n" +
+        "    [AppID] [char](20) NULL,             \n" +
+        "    [dbpid] [char](10) NULL,             \n" +
+        "    [Sql] [varchar](500) NULL,           \n" +
+        "    [TablesList] [varchar](500) NULL,    \n" +
+        "    [Prm] [varchar](500) NULL,           \n" +
+        "    [ILev] [char](20) NULL,              \n" +
+        "    [Rows] [char](10) NULL,              \n" +
+        "    [Context] [varchar](500) NULL,       \n" +
+        "    [ContextLastRow] [varchar](500) NULL,\n" +
+        "    [Func] [char](50) NULL,              \n" +
+        "    [Trans] [char](1) NULL,              \n" +
+        "    [RowsAffected] [char](10) NULL,      \n" +
+        "    [Descr] [varchar](500) NULL,         \n" +
+        "    [planSQLText] [varchar](500) NULL,   \n" +
+        "    [Exception] [char](100) NULL         \n" +
+        ")";
+
+        execute(sqlText);
+    }
+
+    public void execSQLFromResource1(String resourceName) throws SQLException {
 
         InputStream inputStream = Main.class.getResourceAsStream(resourceName);
 

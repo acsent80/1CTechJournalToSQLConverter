@@ -7,6 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 
 import java.io.*;
@@ -18,6 +19,8 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
 
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
@@ -72,11 +75,11 @@ public class mainController implements Initializable {
         private final SimpleIntegerProperty qty;
 
         private TableRow() {
-            this.dirName  = new SimpleStringProperty(null);
+            this.dirName = new SimpleStringProperty(null);
             this.fileName = new SimpleStringProperty(null);
             this.fileSize = new SimpleLongProperty(0L);
-            this.status   = new SimpleStringProperty(null);
-            this.qty      = new SimpleIntegerProperty(0);
+            this.status = new SimpleStringProperty(null);
+            this.qty = new SimpleIntegerProperty(0);
         }
 
         private TableRow(File file, Long fileSize) {
@@ -86,8 +89,8 @@ public class mainController implements Initializable {
 
             fileSize = fileSize / (1024 * 1024);
             this.fileSize = new SimpleLongProperty(fileSize);
-            this.status   = new SimpleStringProperty("");
-            this.qty      = new SimpleIntegerProperty(0);
+            this.status = new SimpleStringProperty("");
+            this.qty = new SimpleIntegerProperty(0);
         }
 
         public String getDirName() {
@@ -146,11 +149,11 @@ public class mainController implements Initializable {
         connectionStringText.setText("D:\\Temp");
 
         // Привязка таблицы к данным
-        tableDirName. setCellValueFactory(new PropertyValueFactory<>("dirName"));
+        tableDirName.setCellValueFactory(new PropertyValueFactory<>("dirName"));
         tableFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
         tableFileSize.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
-        tableStatus.  setCellValueFactory(new PropertyValueFactory<>("status"));
-        tableQty.     setCellValueFactory(new PropertyValueFactory<>("qty"));
+        tableStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        tableQty.setCellValueFactory(new PropertyValueFactory<>("qty"));
 
         filesTableView.setItems(data);
 
@@ -220,7 +223,7 @@ public class mainController implements Initializable {
         //alert.setContentText("Clear table 'logs'?");
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.get() != ButtonType.OK){
+        if (result.get() != ButtonType.OK) {
             return;
         }
 
@@ -254,7 +257,7 @@ public class mainController implements Initializable {
                     System.out.println(counter);
                 }
 
-                 filesTableView.refresh();
+                filesTableView.refresh();
                 //filesTableView.getProperties().put(TableViewSkinBase.REFRESH, Boolean.TRUE);
             }
         }
@@ -301,17 +304,17 @@ public class mainController implements Initializable {
         tjLoader.writersCount = 1;
         tjLoader.addListener(updateTableThreadListener);
 
-        tjLoader.driverType   = DBTools.DriverType.SQLite;
-        tjLoader.serverName   = "";
+        tjLoader.driverType = DBTools.DriverType.SQLite;
+        tjLoader.serverName = "";
         tjLoader.databaseName = "TEST1";
-        tjLoader.user         = "";
-        tjLoader.password     = "";
+        tjLoader.user = "";
+        tjLoader.password = "";
         tjLoader.integretedSecurity = false;
 
         ArrayList<String> filesArrayList = new ArrayList<>();
 
         rowsByFile = new HashMap<>();
-        for (TableRow tableRow: data) {
+        for (TableRow tableRow : data) {
             String fileName = tableRow.getDirName() + "\\" + tableRow.getFileName();
             rowsByFile.put(fileName, tableRow);
             filesArrayList.add(fileName);
@@ -321,6 +324,22 @@ public class mainController implements Initializable {
 
     }
 
+    public void optionsButtonOnAction(ActionEvent actionEvent) throws IOException {
+
+        URL url = Main.class.getResource("/options.fxml");
+        FXMLLoader loader = new FXMLLoader(url);
+        Parent root = loader.load();
+
+        Stage optionsStage = new Stage();
+
+        optionsController controller = loader.getController();
+        controller.setStage(optionsStage);
+
+        Scene scene = new Scene(root);
+        optionsStage.setScene(scene);
+        optionsStage.setTitle("Options");
+        optionsStage.show();
+    }
 }
 
 

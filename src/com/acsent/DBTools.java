@@ -86,7 +86,7 @@ class DBTools {
         sqlText.append(")");
 
         return connection.prepareStatement(sqlText.toString());
-        
+
     }
 
     public void insertValues(PreparedStatement preparedStatement, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {

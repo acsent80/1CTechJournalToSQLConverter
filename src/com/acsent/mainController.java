@@ -24,6 +24,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -253,8 +254,7 @@ public class mainController implements Initializable {
             messageLabel.setText("Таблица очищена");
 
         } catch (Exception e) {
-            messageLabel.setText(e.toString());
-            e.printStackTrace();
+            showExceptionAlert(e);
         }
 
     }
@@ -324,7 +324,7 @@ public class mainController implements Initializable {
             db.close();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            showExceptionAlert(e);
             return;
         }
 
@@ -372,6 +372,43 @@ public class mainController implements Initializable {
         optionsStage.setTitle("Options");
         optionsStage.show();
     }
+
+    void showExceptionAlert(Exception ex) {
+
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Exception Dialog");
+        alert.setHeaderText("Couldn't connect to server");
+        alert.setContentText(ex.toString());
+
+        // Create expandable Exception.
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        String exceptionText = sw.toString();
+
+        Label label = new Label("The exception stacktrace was:");
+
+        TextArea textArea = new TextArea(exceptionText);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
+
+        // Set expandable Exception into the dialog pane.
+        alert.getDialogPane().setExpandableContent(expContent);
+
+        alert.showAndWait();
+
+    }
+
 }
 
 

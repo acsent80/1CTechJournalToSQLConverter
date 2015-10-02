@@ -30,7 +30,11 @@ class DBTools {
     public void connectSQLite(String dbName) throws SQLException, ClassNotFoundException {
 
         Class.forName("org.sqlite.JDBC");
-        String connectionUrl = "jdbc:sqlite:" + dbName + ".s3db";
+
+        if (!dbName.endsWith(".s3db")) {
+            dbName += ".s3db";
+        }
+        String connectionUrl = "jdbc:sqlite:" + dbName;
 
         connection = DriverManager.getConnection(connectionUrl, "", "");
 
@@ -124,8 +128,13 @@ class DBTools {
 
     public void createTable(String tableName) throws SQLException {
 
+        String ifNotExists = "";
+        if (driverType == DriverType.SQLite) {
+            ifNotExists = "if not exists";
+        }
+
         String sqlText =
-        "CREATE TABLE if not exists [logs](       \n" +
+        "CREATE TABLE " + ifNotExists + " [" + tableName + "](\n" +
         "    [DateTime] [datetime] NULL,          \n" +
         "    [FileName] [char](200) NULL,         \n" +
         "    [Moment] [char](12) NULL,            \n" +

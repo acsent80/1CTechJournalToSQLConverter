@@ -60,7 +60,7 @@
             <Insets bottom="5.0" top="5.0" />
          </GridPane.margin>
       </TableView>
-      <TextField fx:id="connectionStringText" prefHeight="23.0" prefWidth="273.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+      <TextField fx:id="connectionStringText" editable="false" prefHeight="23.0" prefWidth="273.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
          <GridPane.margin>
             <Insets bottom="5.0" right="30.0" top="5.0" />
          </GridPane.margin>

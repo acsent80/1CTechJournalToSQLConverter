@@ -3,10 +3,7 @@ package com.acsent;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -32,8 +29,19 @@ public class optionsController implements Initializable {
     PasswordField passwordText;
     @FXML
     Button selectDatabaseButton;
+    @FXML
+    CheckBox integratedSecurityCheckBox;
+
+    @FXML
+    TextField readingTreadsText;
+    @FXML
+    TextField writingTreadsText;
+    @FXML
+    CheckBox oneThreadPerFileCheckBox;
 
     private Stage stage;
+
+    public String connectionString;
 
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
@@ -41,6 +49,7 @@ public class optionsController implements Initializable {
         serverText.setText(  prefs.get("Server",   ""));
         databaseText.setText(prefs.get("Database", "logs"));
         tableText.setText(   prefs.get("Table",    "logs"));
+        integratedSecurityCheckBox.setSelected(prefs.getBoolean("IntegratedSecurity", false));
 
         dbDriverComboBox.getItems().addAll(
                 "SQLite",
@@ -48,6 +57,11 @@ public class optionsController implements Initializable {
         );
 
         dbDriverComboBox.setValue(prefs.get("dbDriver", "SQLite"));
+
+        readingTreadsText.setText(String.valueOf(prefs.getInt("ReadersCount", 1)));
+        writingTreadsText.setText(String.valueOf(prefs.getInt("WritersCount", 1)));
+        oneThreadPerFileCheckBox.setSelected(prefs.getBoolean("OneReaderPerFile", false));
+
         setControlStatus();
     }
 
@@ -61,19 +75,49 @@ public class optionsController implements Initializable {
 
     public void okButtonOnAction(ActionEvent actionEvent) throws IOException {
 
+        String serverName = serverText.getText();
+        String dbName     = databaseText.getText();
+        String driverType = dbDriverComboBox.getValue();
+        boolean integratedSecurity = integratedSecurityCheckBox.isSelected();
+
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
-        prefs.put("Server",   serverText.getText());
-        prefs.put("Database", databaseText.getText());
+        prefs.put("Server",   serverName);
+        prefs.put("Database", dbName);
         prefs.put("Table",    tableText.getText());
         prefs.put("user",     userText.getText());
         prefs.put("password", passwordText.getText());
+        prefs.putBoolean("IntegratedSecurity", integratedSecurity);
+        prefs.putInt("ReadersCount", Integer.valueOf(readingTreadsText.getText()));
+        prefs.putInt("WritersCount", Integer.valueOf(writingTreadsText.getText()));
+        prefs.putBoolean("OneReaderPerFile", oneThreadPerFileCheckBox.isSelected());
 
-        prefs.put("dbDriver", dbDriverComboBox.getValue());
+        prefs.put("dbDriver", driverType);
+
+        if (driverType.equals("SQLite")) {
+            connectionString = "jdbc:sqlite:" + dbName;
+        } else if (driverType.equals("MS SQL")) {
+            connectionString = "jdbc:sqlserver://" + serverName + " :1433;databaseName=" + dbName + ";IntegratedSecurity=" + String.valueOf(integratedSecurity);
+        }
 
         stage.close();
     }
 
-    public void dbDriverComboBoxOnAction(ActionEvent actionEvent) throws IOException {
+    public void dbDriverComboBoxOnAction(ActionEvent actionEvent) {
+        setControlStatus();
+
+        String dbDriver = dbDriverComboBox.getValue();
+        if (dbDriver.equals("SQLite")) {
+            readingTreadsText.setText("1");
+            writingTreadsText.setText("1");
+            oneThreadPerFileCheckBox.setSelected(false);
+        }
+    }
+
+    public void integratedSecurityCheckBoxOnAction(ActionEvent actionEvent) {
+        setControlStatus();
+    }
+
+    public void oneThreadPerFileCheckBoxOnAction(ActionEvent actionEvent) {
         setControlStatus();
     }
 
@@ -101,11 +145,36 @@ public class optionsController implements Initializable {
             userText.setDisable(true);
             passwordText.setDisable(true);
             selectDatabaseButton.setDisable(false);
+
+            readingTreadsText.setDisable(true);
+            writingTreadsText.setDisable(true);
+            oneThreadPerFileCheckBox.setDisable(true);
+
         } else {
             serverText.setDisable(false);
             userText.setDisable(false);
             passwordText.setDisable(false);
             selectDatabaseButton.setDisable(true);
+
+            readingTreadsText.setDisable(false);
+            writingTreadsText.setDisable(false);
+            oneThreadPerFileCheckBox.setDisable(false);
+
+            if (oneThreadPerFileCheckBox.isSelected()) {
+                readingTreadsText.setDisable(true);
+            } else {
+                readingTreadsText.setDisable(false);
+            }
+
         }
+
+        if (integratedSecurityCheckBox.isSelected()) {
+            userText.setDisable(true);
+            passwordText.setDisable(true);
+        } else {
+            userText.setDisable(false);
+            passwordText.setDisable(false);
+        }
+
     }
 }

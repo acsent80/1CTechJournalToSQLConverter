@@ -147,7 +147,7 @@ public class mainController implements Initializable {
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
         dirText.setText(prefs.get("Directory", ""));
 
-        connectionStringText.setText("D:\\Temp");
+        connectionStringText.setText(prefs.get("ConnectionString", ""));
 
         // Привязка таблицы к данным
         tableDirName.setCellValueFactory(new PropertyValueFactory<>("dirName"));
@@ -164,6 +164,7 @@ public class mainController implements Initializable {
 
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
         prefs.put("Directory", dirText.getText());
+        prefs.put("ConnectionString", connectionStringText.getText());
     }
 
     public void dirButtonOnAction(ActionEvent actionEvent) {
@@ -302,18 +303,22 @@ public class mainController implements Initializable {
 
         Preferences prefs = Preferences.userNodeForPackage(Main.class);
 
-        DBTools.DriverType driverType= DBTools.DriverType.SQLite;
+        DBTools.DriverType driverType = DBTools.DriverType.SQLite;
         String driverTypeAsString = prefs.get("dbDriver", "SQLite");
         if (driverTypeAsString.equals("MS SQL")) {
             driverType = DBTools.DriverType.MSSQL;
         }
 
-        String serverName   = prefs.get("Server",   "");
+        String serverName = prefs.get("Server", "");
         String databaseName = prefs.get("Database", "logs");
-        String tableName    = prefs.get("Table",    "logs");
-        String user         = prefs.get("user",     "");
-        String password     = prefs.get("password", "");
-        boolean is          = prefs.getBoolean("IntegratedSecurity", false);
+        String tableName = prefs.get("Table", "logs");
+        String user = prefs.get("user", "");
+        String password = prefs.get("password", "");
+        boolean is = prefs.getBoolean("IntegratedSecurity", false);
+
+        int readersCount = prefs.getInt("ReadersCount", 1);
+        int writersCount = prefs.getInt("WritersCount", 1);
+        boolean oneReaderPerFile = prefs.getBoolean("OneReaderPerFile", false);
 
         try {
 
@@ -331,8 +336,16 @@ public class mainController implements Initializable {
         UpdateTableThreadListener updateTableThreadListener = new UpdateTableThreadListener();
 
         TJLoader tjLoader = new TJLoader();
-        tjLoader.readersCount = 1;
-        tjLoader.writersCount = 1;
+
+        if (driverType == DBTools.DriverType.SQLite) {
+            tjLoader.readersCount = 1;
+            tjLoader.writersCount = 1;
+            tjLoader.oneReaderPerFile = false;
+        } else {
+            tjLoader.readersCount = readersCount;
+            tjLoader.writersCount = writersCount;
+            tjLoader.oneReaderPerFile = oneReaderPerFile;
+        }
         tjLoader.addListener(updateTableThreadListener);
 
         tjLoader.driverType   = driverType;
@@ -370,7 +383,11 @@ public class mainController implements Initializable {
         Scene scene = new Scene(root);
         optionsStage.setScene(scene);
         optionsStage.setTitle("Options");
-        optionsStage.show();
+        optionsStage.showAndWait();
+
+        if (controller.connectionString != null) {
+            connectionStringText.setText(controller.connectionString);
+        }
     }
 
     void showExceptionAlert(Exception ex) {

@@ -105,7 +105,7 @@ public class TJLoader {
                     tokensQueue.put(tokens);
 
                     counter++;
-                    if (counter == 500) break;
+                    if (counter == 100) break;
                 }
 
                 done.set(true);

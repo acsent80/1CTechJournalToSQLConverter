@@ -3,6 +3,8 @@ package com.acsent;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("WeakerAccess")
 public class Parser implements Iterator<HashMap<String, String>> {
@@ -18,7 +20,12 @@ public class Parser implements Iterator<HashMap<String, String>> {
 
     private String pending = null;
 
+    private String fileName;
     private BufferedReader bufferedReader;
+
+    private Pattern regexpFrom = Pattern.compile("\\sFROM\\s+([^ ,]+)(?:\\s*,\\s*([^ ,]+))*\\s+");
+    private Pattern regexpJoin = Pattern.compile("\\sJOIN\\s+([^ ,]+)(?:\\s*,\\s*([^ ,]+))*\\s+");
+    private Pattern regexpInto = Pattern.compile("\\sINTO\\s+([^ ,]+)(?:\\s*,\\s*([^ ,]+))*\\s+");
 
     public boolean parseLine(String nextLine, HashMap<String, String> tokens) throws IOException {
 
@@ -78,10 +85,11 @@ public class Parser implements Iterator<HashMap<String, String>> {
 
     public void addField(HashMap<String, String> tokens, StringBuilder sb) {
 
+        String value = sb.toString() ;
+
         if (fieldNumber == 1) {
 
             //06:36.085000-156969
-            String value = sb.toString();
             int index = value.indexOf('-');
             String timeValue     = value.substring(0, index);
             String durationValue = value.substring(index + 1);
@@ -92,21 +100,91 @@ public class Parser implements Iterator<HashMap<String, String>> {
 
         } else if (fieldNumber == 2) {
 
-            tokens.put("Name", sb.toString());
+            tokens.put("Name", value);
 
         } else if (fieldNumber == 3) {
-            tokens.put("Level", sb.toString());
+            tokens.put("Level", value);
 
         } else {
             fieldName = fieldName.replace(":", "_");
-            tokens.put(fieldName, sb.toString());
+
+            tokens.put(fieldName, value);
+
+            if (fieldName.equals("Context")) {
+
+                String[] rows = value.split("\n");
+                if (rows.length > 0) {
+                    tokens.put("ContextLastRow", rows[rows.length - 1]);
+                }
+
+            } else if (fieldName.equals("Sql") || fieldName.equals("Sdbl")) {
+
+                String tableList = getTableList(value);
+                tokens.put("TablesList", tableList);
+
+            }
         }
 
         sb.setLength(0);
     }
 
+    public String getTableList(String sqlText) {
+
+        StringBuilder tableList = new StringBuilder();
+        // FROM
+        Matcher matcher = regexpFrom.matcher(sqlText);
+        while(matcher.find())
+        {
+            String tableName = matcher.group();
+            tableName = tableName.replace("FROM ", "").trim();
+            tableName = tableName.replace("FROM\n", "").trim();
+
+            if (!tableName.startsWith("(") && !tableName.startsWith("#")) {
+                if (tableList.length() > 0) {
+                    tableList.append(" | ");
+                }
+                tableList.append(tableName.replace("dbo.", ""));
+            }
+        }
+
+        // JOIN
+        matcher = regexpJoin.matcher(sqlText);
+        while(matcher.find())
+        {
+            String tableName = matcher.group();
+            tableName = tableName.replace("JOIN ", "").trim();
+            tableName = tableName.replace("JOIN\n", "").trim();
+
+            if (!tableName.startsWith("(") && !tableName.startsWith("#")) {
+                if (tableList.length() > 0) {
+                    tableList.append(" | ");
+                }
+                tableList.append(tableName.replace("dbo.", ""));
+            }
+        }
+
+        // JOIN
+        matcher = regexpInto.matcher(sqlText);
+        while(matcher.find())
+        {
+            String tableName = matcher.group();
+            tableName = tableName.replace("INTO ", "").trim();
+            tableName = tableName.replace("INTO\n", "").trim();
+
+            if (!tableName.startsWith("(") && !tableName.startsWith("#")) {
+                if (tableList.length() > 0) {
+                    tableList.append(" | ");
+                }
+                tableList.append(tableName.replace("dbo.", ""));
+            }
+        }
+
+        return tableList.toString();
+    }
+
     public void openFile(String fileName) throws FileNotFoundException, UnsupportedEncodingException {
 
+        this.fileName = fileName;
         InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(fileName), "UTF-8");
         bufferedReader = new BufferedReader(inputStreamReader);
 
@@ -129,6 +207,7 @@ public class Parser implements Iterator<HashMap<String, String>> {
 
                 boolean isEndOfLine = parseLine(line, tokens);
                 if (isEndOfLine) {
+                    tokens.put("FileName", fileName);
                     return tokens;
                 }
             }

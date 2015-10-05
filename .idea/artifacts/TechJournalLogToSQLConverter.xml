@@ -1,0 +1,22 @@
+<component name="ArtifactManager">
+  <artifact type="javafx" name="TechJournalLogToSQLConverter">
+    <output-path>$PROJECT_DIR$/out/artifacts/TechJournalLogToSQLConverter</output-path>
+    <properties id="javafx-properties">
+      <options>
+        <option name="appClass" value="com.acsent.Main" />
+        <option name="description" value="" />
+        <option name="htmlParamFile" value="" />
+        <option name="paramFile" value="" />
+        <option name="title" value="" />
+        <option name="vendor" value="" />
+      </options>
+    </properties>
+    <root id="root">
+      <element id="archive" name="TechJournalLogToSQLConverter.jar">
+        <element id="module-output" name="TechJournalLogToSQLConverter" />
+        <element id="file-copy" path="$PROJECT_DIR$/libs/sqljdbc42.jar" />
+        <element id="file-copy" path="$PROJECT_DIR$/libs/sqlite-jdbc-3.7.2.jar" />
+      </element>
+    </root>
+  </artifact>
+</component>

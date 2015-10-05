@@ -328,7 +328,7 @@ public class mainController implements Initializable {
             db.createTable(tableName);
             db.close();
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             showExceptionAlert(e);
             return;
         }

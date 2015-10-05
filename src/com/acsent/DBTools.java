@@ -1,15 +1,14 @@
 package com.acsent;
 
-import java.io.InputStream;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Scanner;
 
 class DBTools {
 
     private Connection connection;
     private DriverType driverType;
+    private String dbName;
 
     public enum DriverType{SQLite, MSSQL}
 
@@ -18,6 +17,8 @@ class DBTools {
     }
 
     public void connect(String serverName, String dbName, String user, String password, boolean integratedSecurity) throws SQLException, ClassNotFoundException {
+
+        this.dbName = dbName;
 
         if (driverType == DriverType.SQLite) {
             connectSQLite(dbName);
@@ -107,12 +108,19 @@ class DBTools {
         preparedStatement.execute();
     }
 
-     public ArrayList<String> getTableColumns(String tableName) throws SQLException  {
+    public ArrayList<String> getTableColumns(String tableName) throws SQLException  {
 
         ArrayList<String> arrayList = new ArrayList<>();
 
         Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("PRAGMA table_info('" + tableName + "')");
+        String sqlText = "";
+        if (driverType == DriverType.SQLite) {
+            sqlText = "PRAGMA table_info('" + tableName + "')";
+        } else if (driverType == DriverType.MSSQL) {
+            sqlText = "SELECT COLUMN_NAME as name FROM [" + dbName + "].INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "'";
+        }
+        ResultSet resultSet = statement.executeQuery(sqlText);
+
         while (resultSet.next()) {
             arrayList.add(resultSet.getString("name"));
         }
@@ -169,18 +177,6 @@ class DBTools {
         ")";
 
         execute(sqlText);
-    }
-
-    public void execSQLFromResource1(String resourceName) throws SQLException {
-
-        InputStream inputStream = Main.class.getResourceAsStream(resourceName);
-
-        if (inputStream != null) {
-
-            String sqlText = new Scanner(inputStream, "UTF-8").useDelimiter("\\A").next();
-            execute(sqlText);
-
-        }
     }
 
     public void execute(String sqlText) throws SQLException {

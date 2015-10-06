@@ -1,8 +1,12 @@
 package com.acsent;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.FieldPosition;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 class DBTools {
 
@@ -94,13 +98,22 @@ class DBTools {
 
     }
 
-    public void insertValues(PreparedStatement preparedStatement, ArrayList<String> fields, HashMap<String, String> values) throws SQLException {
+    public void insertValues(PreparedStatement preparedStatement, ArrayList<String> fields, HashMap<String, Object> values) throws SQLException {
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddhhmmss");
 
         int fieldNumber = 1;
         for (String field : fields) {
 
-            String fieldValue = values.get(field);
-            preparedStatement.setString(fieldNumber, fieldValue);
+            Object fieldValue = values.get(field);
+
+            if (fieldValue instanceof String) {
+                preparedStatement.setString(fieldNumber, (String) fieldValue);
+            } else if (fieldValue instanceof Integer) {
+                preparedStatement.setInt(fieldNumber, (Integer) fieldValue);
+            } else if (fieldValue instanceof java.util.Date) {
+                preparedStatement.setString(fieldNumber, formatter.format(fieldValue));
+            }
 
             fieldNumber++;
         }

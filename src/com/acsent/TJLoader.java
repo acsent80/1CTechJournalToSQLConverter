@@ -79,7 +79,7 @@ public class TJLoader {
 
             try {
 
-                BlockingQueue<HashMap<String, String>> tokensQueue = new ArrayBlockingQueue<>(128 * writersCount, true);
+                BlockingQueue<HashMap<String, Object>> tokensQueue = new ArrayBlockingQueue<>(128 * writersCount, true);
 
                 ExecutorService executorService = Executors.newFixedThreadPool(writersCount);
 
@@ -87,7 +87,7 @@ public class TJLoader {
                     executorService.submit(new DBTask(tokensQueue));
                 }
 
-                HashMap<String, String> tokens;
+                HashMap<String, Object> tokens;
 
                 Parser parser = new Parser();
                 try {
@@ -126,9 +126,9 @@ public class TJLoader {
 
         class DBTask implements Runnable {
 
-            private BlockingQueue<HashMap<String, String>> tokensQueue;
+            private BlockingQueue<HashMap<String, Object>> tokensQueue;
 
-            public DBTask(BlockingQueue<HashMap<String, String>> tokensQueue) {
+            public DBTask(BlockingQueue<HashMap<String, Object>> tokensQueue) {
                 this.tokensQueue = tokensQueue;
             }
 
@@ -174,7 +174,7 @@ public class TJLoader {
                 try {
                     while (!done.get() || !tokensQueue.isEmpty()) {
 
-                        HashMap<String, String> tokens = tokensQueue.take();
+                        HashMap<String, Object> tokens = tokensQueue.take();
                         counter++;
 
                         try {
